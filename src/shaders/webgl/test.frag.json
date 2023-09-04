@@ -1,0 +1,21 @@
+{
+    "name": "Debug shader",
+    "fileName": "test.frag",
+    "time": "iTime",
+    "resolution": "iResolution",
+    "debugOnly": true,
+    "uniforms": [
+        {
+            "type": "color",
+            "name": "Colour (UK English)",
+            "accessor": "colorOne",
+            "init": "FF00FF"
+        },
+        {
+            "type": "float",
+            "name": "Dingus",
+            "accessor": "dingus",
+            "init": 1.0
+        }
+    ]
+}

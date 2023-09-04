@@ -1,0 +1,5 @@
+flake.lock
+out
+.direnv
+.vscode
+result

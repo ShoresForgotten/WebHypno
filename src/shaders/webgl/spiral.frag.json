@@ -1,0 +1,66 @@
+{
+    "name": "Spiral",
+    "fileName": "spiral.frag",
+    "time": "iTime",
+    "resolution": "iResolution",
+    "debugOnly": false,
+    "uniforms": [
+        {
+            "type": "multi",
+            "name": "Arm one",
+            "settings": [
+                {
+                    "type": "color",
+                    "name": "Arm one color",
+                    "accessor": "colors[0]",
+                    "init": "000000"
+                },
+                {
+                    "type": "float",
+                    "name": "Arm one size",
+                    "accessor": "sizes[0]",
+                    "min": 0.01,
+                    "init": 1.0
+                }
+            ]
+        },
+        {
+            "type": "multi",
+            "name": "Arm two",
+            "settings": [
+                {
+                    "type": "color",
+                    "name": "Arm two color",
+                    "accessor": "colors[1]",
+                    "init": "FFFFFF"
+                },
+                {
+                    "type": "float",
+                    "name": "Arm two size",
+                    "accessor": "sizes[1]",
+                    "min": 0.01,
+                    "init": 1.0
+                }
+            ]
+        },
+        {
+            "type": "int",
+            "name": "Arm count",
+            "accessor": "arms",
+            "min": 1,
+            "init": 10
+        },
+        {
+            "type": "float",
+            "name": "Zoom level",
+            "accessor": "zoom",
+            "init": 0.5
+        },
+        {
+            "type": "float",
+            "name": "Rotation speed",
+            "accessor": "speed",
+            "init": 1.0
+        }
+    ]
+}

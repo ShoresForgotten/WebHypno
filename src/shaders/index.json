@@ -1,0 +1,6 @@
+{
+    "webgl": [
+        {"name": "test", "file": "test.frag.json"},
+        {"name": "spiral", "file": "spiral.frag.json"}
+    ]
+}

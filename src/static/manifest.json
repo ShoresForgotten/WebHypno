@@ -1,0 +1,11 @@
+{
+    "name": "Forgotten Hypno",
+    "display": "fullscreen",
+    "icons": [
+        {
+            "src": "tempicon.jpg",
+            "type": "image/jpeg",
+            "sizes": "any"
+        }
+    ]
+}

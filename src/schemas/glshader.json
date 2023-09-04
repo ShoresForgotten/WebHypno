@@ -1,0 +1,98 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema",
+	"$id": "urn:shoresforgotten:hypnoweb:schemas:glshader:v1",
+    "title": "Fullscreen Fragment Shader Information (WebGL)",
+    "descripton": "A description of the uniforms that form the interface of a fullscreen shader",
+    "type": "object",
+    "properties": {
+        "name": {
+            "description": "The name of the shader, to be displayed to the user",
+            "type": "string"
+        },
+        "fileName": {
+            "descripton": "The file that contains the shader in question (currently has to be located in the same directory",
+            "type": "string"
+        },
+        "time": {
+            "description": "The name of the uniform that keeps track of time",
+            "type": "string"
+        },
+        "resolution": {
+            "description": "The name of the uniform that describes the resolution of the screen",
+            "type": "string"
+        },
+        "debugOnly": {
+            "description": "Whether or not this shader should only appear in debug mode",
+            "type": "boolean"
+        },
+        "uniforms": {
+            "descripton": "The information about the uniforms themselves",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "description": "The type of the uniform",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "The name of the setting to display to the user",
+                        "type": "string"
+                    },
+                    "settings": {
+                        "description": "USE ONLY WITH TYPE multi; for grouping uniforms",
+                        "type": "array",
+                        "items": {
+							"type": "object",
+                            "properties": {
+								"type": {
+									"description": "The type of the uniform",
+									"type": "string"
+								},
+								"name": {
+									"description": "The name of the setting to display to the user",
+									"type": "string"
+								},
+								"accessor": {
+									"descripton": "The string that identifies the uniform location",
+									"type": "string"
+								},
+								"min": {
+									"description": "USE ONLY WITH NUMERIC TYPES; The minimum value of this uniform",
+									"type": ["integer", "number"]
+								},
+								"max": {
+									"description": "USE ONLY WITH NUMERIC TYPES; The maximum value of this uniform",
+									"type": ["integer", "number"]
+								},
+								"init": {
+									"description": "The initial value of this uniform",
+									"type": ["integer", "number", "string"]
+								}
+							},
+							"required": ["type", "name", "accessor", "init"]
+                        }
+                    },
+                    "accessor": {
+                        "descripton": "The string that identifies the uniform location",
+                        "type": "string"
+                    },
+                    "min": {
+                        "description": "USE ONLY WITH NUMERIC TYPES; The minimum value of this uniform",
+                        "type": ["integer", "number"]
+                    },
+                    "max": {
+                        "description": "USE ONLY WITH NUMERIC TYPES; The maximum value of this uniform",
+                        "type": ["integer", "number"]
+                    },
+                    "init": {
+                        "description": "The initial value of this uniform",
+                        "type": ["integer", "number", "string"]
+                    }
+                },
+				"required": ["type", "name"]
+            }
+        }
+    },
+    "required": ["name", "file", "debugOnly", "uniforms"]
+}
