@@ -94,5 +94,5 @@
             }
         }
     },
-    "required": ["name", "file", "debugOnly", "uniforms"]
+    "required": ["name", "fileName", "debugOnly", "uniforms"]
 }
