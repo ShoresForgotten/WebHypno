@@ -1,6 +1,7 @@
 #version 100
 
 #define NUM_RINGS 4
+#define MILLISECONDS 1000.0
 
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
@@ -28,13 +29,14 @@ vec2 polarCoord(vec2 coord, vec2 resolution) {
     return vec2(dist, angle);
 }
 void main() {
+    float time = iTime / MILLISECONDS;
     vec2 fragCoord = gl_FragCoord.xy;
     vec2 pos = polarCoord(fragCoord.xy, iResolution.xy);
 
     // How wide a group of rings is.
     float ringsWidth = 1. / zoom;
     // Wrap around until we've got a position within [0.0, twoRingWidth)
-    float ringPos = mod(pos.x + iTime * speed, ringsWidth);
+    float ringPos = mod(pos.x + time * speed, ringsWidth);
     // Divide by twoRingWidth to get back into [0.0, 1.0]
     float relativeRingPos = ringPos / ringsWidth;
 

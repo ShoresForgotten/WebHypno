@@ -1,6 +1,7 @@
 #version 100
 
 #define NUM_RINGS 2
+#define MILLISECONDS 1000.0
 
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
@@ -29,6 +30,7 @@ vec2 polarCoord(vec2 coord, vec2 resolution) {
 }
 
 void main() {
+    float time = iTime / MILLISECONDS;
     vec2 fragCoord = gl_FragCoord.xy;
     vec2 pos = polarCoord(fragCoord.xy, iResolution.xy);
 
@@ -48,7 +50,7 @@ void main() {
     // Dividing sizeSum by the length to keep zoom based on [1.,1.]
     float ringsWidth = 1. / zoom;
     // Wrap around until we've got a position within [0.0, twoRingWidth)
-    float ringPos = mod(pos.x + iTime * speed, ringsWidth);
+    float ringPos = mod(pos.x + time * speed, ringsWidth);
     // Divide by twoRingWidth to get back into [0.0, 1.0]
     if (ringPos / ringsWidth < scaledSizes[0]){
         gl_FragColor = vec4(colors[0], 1.);

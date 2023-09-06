@@ -1,0 +1,60 @@
+{
+    "name": "Two Colored Rings",
+    "fileName": "2ring.frag",
+    "time": "iTime",
+    "resolution": "iResolution",
+    "debugOnly": false,
+    "uniforms": [
+        {
+            "type": "float",
+            "name": "Zoom",
+            "accessor": "zoom",
+            "init": 1.0,
+            "min": 0.01
+        },
+        {
+            "type": "float",
+            "name": "Speed",
+            "accessor": "speed",
+            "init": -0.1
+        },
+        {
+            "type": "multi",
+            "name": "Ring One",
+            "settings": [
+                {
+                    "type": "color",
+                    "name": "Ring One Color",
+                    "accessor": "colors[0]",
+                    "init": "000000"
+                },
+                {
+                    "type": "float",
+                    "name": "Ring One Size",
+                    "accessor": "sizes[0]",
+                    "init": 1.0,
+                    "min": 0.0
+                }
+            ]
+        },
+        {
+            "type": "multi",
+            "name": "Ring Two",
+            "settings": [
+                {
+                    "type": "color",
+                    "name": "Ring Two Color",
+                    "accessor": "colors[1]",
+                    "init": "FFFFFF"
+                },
+                {
+                    "type": "float",
+                    "name": "Ring Two Size",
+                    "accessor": "sizes[1]",
+                    "init": 1.0,
+                    "min": 0.0
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "name": "Radial Fade",
+    "fileName": "radial_fade.frag",
+    "time": "iTime",
+    "resolution": "iResolution",
+    "debugOnly": false,
+    "uniforms": [
+        {
+            "type": "color",
+            "name": "Color One",
+            "accessor": "colors[0]",
+            "init": "FF00FF"
+        },
+        {
+            "type": "color",
+            "name": "Color Two",
+            "accessor": "colors[1]",
+            "init": "000000"
+        }
+    ]
+}

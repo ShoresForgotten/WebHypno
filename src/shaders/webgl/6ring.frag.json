@@ -1,0 +1,136 @@
+{
+    "name": "Six Colored Rings",
+    "fileName": "6ring.frag",
+    "time": "iTime",
+    "resolution": "iResolution",
+    "debugOnly": false,
+    "uniforms": [
+        {
+            "type": "float",
+            "name": "Zoom",
+            "accessor": "zoom",
+            "init": 1.0,
+            "min": 0.01
+        },
+        {
+            "type": "float",
+            "name": "Speed",
+            "accessor": "speed",
+            "init": -0.1
+        },
+        {
+            "type": "multi",
+            "name": "Ring One",
+            "settings": [
+                {
+                    "type": "color",
+                    "name": "Ring One Color",
+                    "accessor": "colors[0]",
+                    "init": "000000"
+                },
+                {
+                    "type": "float",
+                    "name": "Ring One Size",
+                    "accessor": "sizes[0]",
+                    "init": 20.0,
+                    "min": 0.0
+                }
+            ]
+        },
+        {
+            "type": "multi",
+            "name": "Ring Two",
+            "settings": [
+                {
+                    "type": "color",
+                    "name": "Ring Two Color",
+                    "accessor": "colors[1]",
+                    "init": "76A420"
+                },
+                {
+                    "type": "float",
+                    "name": "Ring Two Size",
+                    "accessor": "sizes[1]",
+                    "init": 20.0,
+                    "min": 0.0
+                }
+            ]
+        },
+        {
+            "type": "multi",
+            "name": "Ring Three",
+            "settings": [
+                {
+                    "type": "color",
+                    "name": "Ring Three Color",
+                    "accessor": "colors[2]",
+                    "init": "000000"
+                },
+                {
+                    "type": "float",
+                    "name": "Ring Three Size",
+                    "accessor": "sizes[2]",
+                    "init": 1.0,
+                    "min": 0.0
+                }
+            ]
+        },
+        {
+            "type": "multi",
+            "name": "Ring Four",
+            "settings": [
+                {
+                    "type": "color",
+                    "name": "Ring Four Color",
+                    "accessor": "colors[3]",
+                    "init": "669BE1"
+                },
+                {
+                    "type": "float",
+                    "name": "Ring Four Size",
+                    "accessor": "sizes[3]",
+                    "init": 20.0,
+                    "min": 0.0
+                }
+            ]
+        },
+        {
+            "type": "multi",
+            "name": "Ring Five",
+            "settings": [
+                {
+                    "type": "color",
+                    "name": "Ring Five Color",
+                    "accessor": "colors[4]",
+                    "init": "000000"
+                },
+                {
+                    "type": "float",
+                    "name": "Ring Five Size",
+                    "accessor": "sizes[4]",
+                    "init": 1.0,
+                    "min": 0.0
+                }
+            ]
+        },
+        {
+            "type": "multi",
+            "name": "Ring Six",
+            "settings": [
+                {
+                    "type": "color",
+                    "name": "Ring Six Color",
+                    "accessor": "colors[5]",
+                    "init": "04BAAD"
+                },
+                {
+                    "type": "float",
+                    "name": "Ring Six Size",
+                    "accessor": "sizes[5]",
+                    "init": 20.0,
+                    "min": 0.0
+                }
+            ]
+        }
+    ]
+}

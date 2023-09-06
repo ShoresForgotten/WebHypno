@@ -2,15 +2,18 @@
 import { GLMesh, GLObject, drawObject, simpleFullscreenShader } from "./rendering.js"
 import { Renderer, Scene, UserSetting } from "../graphics.js"
 import { Color, colorToFloats, floatsToColor, colorStringToFloats } from "../color.js"
+import { StateChange } from "../main.js"
 
 type GLUniformInfo = GLColorUniformInfo | GLIntUniformInfo | GLFloatUniformInfo | GLMultiUniformInfo
 
-type GLColorUniformInfo = Readonly<_GLColorUniformInfo>
-interface _GLColorUniformInfo {
-    type: "color"
-    name: string
-    accessor: string
-    init: string
+/**
+ * Description of a uniform present in the target fragment shader which takes a vec3 to represent a color
+ */
+interface GLColorUniformInfo {
+    readonly type: "color"
+    readonly name: string
+    readonly accessor: string
+    readonly init: string
 }
 
 function isColorUniform(o: any): o is GLColorUniformInfo {
@@ -25,14 +28,16 @@ function isColorUniform(o: any): o is GLColorUniformInfo {
     }
 }
 
-type GLIntUniformInfo = Readonly<_GLIntUniformInfo>
-interface _GLIntUniformInfo {
-    type: "int"
-    min?: number
-    max?: number
-    accessor: string
-    name: string
-    init: number
+/**
+ * Description of a uniform present in the target fragment shader which takes an integer as an input
+ */
+interface GLIntUniformInfo {
+    readonly type: "int"
+    readonly min?: number
+    readonly max?: number
+    readonly accessor: string
+    readonly name: string
+    readonly init: number
 }
 
 function isIntUniform(o: any): o is GLIntUniformInfo {
@@ -49,14 +54,16 @@ function isIntUniform(o: any): o is GLIntUniformInfo {
     }
 }
 
-type GLFloatUniformInfo = Readonly<_GLFloatUniformInfo>
-interface _GLFloatUniformInfo {
-    type: "float"
-    min?: number
-    max?: number
-    accessor: string
-    name: string
-    init: number
+/**
+ * Description of a uniform present in the target fragment shader which takes a float as an input
+ */
+interface GLFloatUniformInfo {
+    readonly type: "float"
+    readonly min?: number
+    readonly max?: number
+    readonly accessor: string
+    readonly name: string
+    readonly init: number
 }
 
 function isFloatUniform(o: any): o is GLFloatUniformInfo {
@@ -73,8 +80,10 @@ function isFloatUniform(o: any): o is GLFloatUniformInfo {
     }
 }
 
-type GLMultiUniformInfo = Readonly<_GLMultiUniformInfo>
-interface _GLMultiUniformInfo {
+/**
+ * Container that indicates the UI connection between two other uniforms
+ */
+interface GLMultiUniformInfo {
     type: "multi",
     name: string,
     settings: GLUniformInfo[]
@@ -113,6 +122,13 @@ function isUniform(o: any): o is GLUniformInfo {
     return (isColorUniform(o) || isFloatUniform(o) || isIntUniform(o) || isMultiUniform(o))
 }
 
+/**
+ * Create the UI description of a given uniform
+ * @param ctx - The WebGLContext in which everything is happening
+ * @param program - The WebGLProgram which the user interacts with
+ * @param uniform - The uniform description
+ * @returns An object that describes the UI requirements for the given uniform (with a setter anonymous function)
+ */
 export function createUIInfo(ctx: WebGLRenderingContext, program: WebGLProgram , uniform: GLUniformInfo): UserSetting {
     switch (uniform.type) {
         case "color": {
@@ -127,7 +143,7 @@ export function createUIInfo(ctx: WebGLRenderingContext, program: WebGLProgram ,
                 return floatsToColor(ctx.getUniform(program, location))
             }
             return {type: "color", name: uniform.name,
-            callback: callback, value: value}
+            set: callback, value: value}
         }
         case "float": {
             ctx.useProgram(program)
@@ -144,7 +160,7 @@ export function createUIInfo(ctx: WebGLRenderingContext, program: WebGLProgram ,
                 min: uniform.min,
                 max: uniform.max,
                 whole: false,
-                callback: callback,
+                set: callback,
                 value: value
             }
         }
@@ -163,7 +179,7 @@ export function createUIInfo(ctx: WebGLRenderingContext, program: WebGLProgram ,
                 min: uniform.min,
                 max: uniform.max,
                 whole: true,
-                callback: callback,
+                set: callback,
                 value: value
             }
         }
@@ -187,14 +203,16 @@ function parseShaderInfo(json: string): GLUIShaderInfo {
     }
 }
 
-type GLUIShaderInfo = Readonly<_GLUIShaderInfo>
-interface _GLUIShaderInfo {
-    name: string
-    fileName: string
-    time?: string
-    resolution?: string
-    debugOnly: boolean
-    uniforms: GLUniformInfo[]
+/**
+ * Information that pertains to the shader as a whole
+ */
+interface GLUIShaderInfo {
+    readonly name: string
+    readonly fileName: string
+    readonly time?: string
+    readonly resolution?: string
+    readonly debugOnly: boolean
+    readonly uniforms: GLUniformInfo[]
 }
 
 function isGLUIShaderInfo(o: any): o is GLUIShaderInfo {
@@ -217,28 +235,30 @@ function isGLUIShaderInfo(o: any): o is GLUIShaderInfo {
     }
 }
 
-
-interface GLState {
-    ctx: WebGLRenderingContext
-    activeScene: Scene
-    scenes: Scene[]
+/**
+ * An object that can be drawn to screen
+ */
+interface GLRegularObject {
+    readonly obj: GLObject
+    readonly update?: (time: number) => void
+    readonly frameResize?: (width: number, height: number) => void
+    readonly draw: () => void
 }
 
-type GLRegularObject = Readonly<_GLRegularObject>
-interface _GLRegularObject {
-    obj: GLObject
-    update?: (time: number) => void
-    frameResize?: (width: number, height: number) => void
-    draw: () => void
+/**
+ * An object that can be drawn to screen and the user can set settings on
+ */
+interface GLUserSettableObject extends GLRegularObject{
+    readonly name: string
+    readonly userSettings: GLUniformInfo[]
 }
 
-type GLUserSettableObject = Readonly<_GLUserSettableObject>
-interface _GLUserSettableObject extends GLRegularObject{
-    name: string
-    userSettings: GLUniformInfo[]
-}
-
-function fetchShader(infoFileName: string): Promise<[GLUIShaderInfo, string]> {
+/**
+ * Fetch the shader source and parse the information related to it
+ * @param infoFileName - The filename of the information file
+ * @returns The UI information of the shader and the source of the shader... eventually
+ */
+async function fetchShader(infoFileName: string): Promise<[GLUIShaderInfo, string]> {
     // this would be nicer with do notation and monad transformers (or really any effect system that's not this)
     return fetch("/shaders/webgl/" + infoFileName)
         .then((response) => {
@@ -262,68 +282,74 @@ function fetchShader(infoFileName: string): Promise<[GLUIShaderInfo, string]> {
             .then((response) => response.text()))]) 
 }
 
-export async function createRenderer(ctx: WebGLRenderingContext, init: string, index: Map<string, string>): Promise<[Renderer, Scene]> {
+/**
+ * Create a WebGL renderer
+ * @param ctx - The WebGLRenderingContext to use
+ * @param init - The name of the shader to start with
+ * @param index - The index containing all shader information files
+ * @param stateUpdate - An anonymous function that informs the global application state about renderer updates
+ * @returns A renderer and an initial scene
+ */
+export async function createRenderer(ctx: WebGLRenderingContext, init: string, index: Map<string, string>, stateUpdate: (state: StateChange) => void): Promise<[Renderer, Scene]> {
     const initPath = index.get(init)
     if (initPath === undefined) throw new Error("Initial shader is not in provided map")
     const shaderPromise = fetchShader(initPath)
     const vaoExt = ctx.getExtension("OES_vertex_array_object")
+    let initFileName = index.get(init)
+    if (!initFileName) {
+        initFileName = index.get(index.keys().next().value)
+        if (!initFileName) {
+            throw new Error(`Error in getting any filename from index.\nIndex: ${index}`)
+        }
+    }
+    const toGet: string[] = []
+    index.forEach((val, key) => {
+        if (val != initFileName) {
+            toGet.push(val)
+        }
+    })
+    const scene = loadScene(ctx, initFileName, vaoExt)
     ctx.clearColor(0.0, 0.0, 0.0, 1.0)
     ctx.clearDepth(1.0)
     ctx.enable(ctx.DEPTH_TEST)
     ctx.depthFunc(ctx.LEQUAL)
-    const shader = await shaderPromise
-    if (shader === undefined) {
-        throw new Error("Error in retrieving shader or shader info")
-    }
-    const fullscreen = simpleFullscreenShader(ctx, shader[1], vaoExt)
-    const timeUpdate = (shader[0].time) ? (time: number) => {
-            ctx.useProgram(fullscreen.program)
-            const location = 
-                ctx.getUniformLocation(fullscreen.program, shader[0].time!)
-            ctx.uniform1f(location, time)
-        } 
-        : undefined
-    
-    const resUpdate = (shader[0].resolution) ? 
-        (width: number, height: number) => {
-            ctx.useProgram(fullscreen.program)
-            const location = 
-                ctx.getUniformLocation(fullscreen.program, shader[0].resolution!)
-            ctx.uniform2f(location, width, height)
+    const renderer: Promise<Renderer> = scene.then((scene) => {
+        const scenes = new Map<string, Scene>([[scene.name, scene]])
+        toGet.forEach((val) => {
+            loadScene(ctx, val, vaoExt).then((scene) => {
+                scenes.set(scene.name, scene)
+                stateUpdate({type: "sceneAdded"})
+            })
+        })
+        return {
+            resize: (width?: number, height?: number) => {
+                const x = (width) ? width : ctx.canvas.width
+                const y = (height) ? height : ctx.canvas.height
+                ctx.viewport(0, 0, x, y)
+                scenes.forEach((scene) => {
+                        scene.resize(x, y)
+                    })
+            },
+            getScenes: () => {return scenes},
+            getCanvas: () => {return ctx.canvas}
         }
-        : undefined
-    ctx.useProgram(fullscreen.program)
-    shader[0].uniforms.forEach((x) => initUniform(ctx, fullscreen.program, x))
-    const obj: GLUserSettableObject = {
-        name: shader[0].name,
-        obj: fullscreen,
-        userSettings: shader[0].uniforms,
-        update: timeUpdate,
-        frameResize: resUpdate,
-        draw: () => { drawObject(ctx, fullscreen, vaoExt) }
-    }
-    if (obj.frameResize) {
-        obj.frameResize(ctx.drawingBufferWidth, ctx.drawingBufferHeight)
-    }
-    const scene = createGLScene(ctx, [obj], [], shader[0].name)
-    const scenes = new Set<Scene>([scene])
-    return [{
-        resize: (width?: number, height?: number) => {
-            const x = (width) ? width : ctx.canvas.width
-            const y = (height) ? height : ctx.canvas.height
-            ctx.viewport(0, 0, x, y)
-            scenes.forEach((scene) => {
-                    scene.frameResize(x, y)
-                })
-        },
-        getScenes: () => {return scenes}
-    }, scene]
+    })
+    return [await renderer, await scene]
 }
 
+/**
+ * Create a scene
+ * @param ctx - The WebGLContext which is simply everything
+ * @param settableObjects - Objects that have attributes settable by users
+ * @param regularObjects - Non-settable objects
+ * @param name - The name of the scene
+ * @param draw - How to draw the scene
+ * @returns A scene
+ */
 function createGLScene(ctx: WebGLRenderingContext, settableObjects: GLUserSettableObject[], regularObjects: GLRegularObject[], name: string, draw?: () => void): Scene {
     return {
         name: name,
-        frameResize: (width: number, height: number) => {
+        resize: (width: number, height: number) => {
             regularObjects.forEach((obj) => {
                 if (obj.frameResize) obj.frameResize(width, height)
             })
@@ -357,6 +383,12 @@ function createGLScene(ctx: WebGLRenderingContext, settableObjects: GLUserSettab
     }
 }
 
+/**
+ * Initialize uniform values
+ * @param ctx - Coooooonnnnnteeeeexxxxxt
+ * @param program - The program to set the uniforms on
+ * @param info - Information about the program's uniforms
+ */
 function initUniform(ctx: WebGLRenderingContext, program: WebGLProgram, info: GLUniformInfo): void {
     switch (info.type) {
         case "color": {
@@ -378,4 +410,50 @@ function initUniform(ctx: WebGLRenderingContext, program: WebGLProgram, info: GL
             info.settings.forEach((x) => initUniform(ctx, program, x))
         }
     }
+}
+
+/**
+ * Asynchronously load a scene
+ * @param ctx - txetnoc
+ * @param fileName - The name of the information file to use
+ * @param ext - VAO extension, if available
+ * @returns A promise to return a scene
+ */
+async function loadScene(ctx: WebGLRenderingContext, fileName: string, ext: (OES_vertex_array_object | null)): Promise<Scene> { // It would be nice to put this in a webworker or smth
+        const sceneData = await fetchShader(fileName)
+        const renderObj = simpleFullscreenShader(ctx, sceneData[1], ext)
+
+        const timeUpdate = (sceneData[0]) ? (time: number) => {
+            ctx.useProgram(renderObj.program)
+            const location = 
+                ctx.getUniformLocation(renderObj.program, sceneData[0].time!)
+            ctx.uniform1f(location, time)
+        } 
+        : undefined
+    
+        const resUpdate = (sceneData[0].resolution) ? 
+        (width: number, height: number) => {
+            ctx.useProgram(renderObj.program)
+            const location = 
+                ctx.getUniformLocation(renderObj.program, sceneData[0].resolution!)
+            ctx.uniform2f(location, width, height)
+        }
+        : undefined
+
+        sceneData[0].uniforms.forEach((x) => {
+            ctx.useProgram(renderObj.program)
+            initUniform(ctx, renderObj.program, x)
+        })
+        const obj: GLUserSettableObject = {
+            name: sceneData[0].name,
+            obj: renderObj,
+            userSettings: sceneData[0].uniforms,
+            update: timeUpdate,
+            frameResize: resUpdate,
+            draw: () => { drawObject(ctx, renderObj, ext) }
+        }
+        if (obj.frameResize) {
+            obj.frameResize(ctx.drawingBufferWidth, ctx.drawingBufferHeight)
+        }
+        return createGLScene(ctx, [obj], [], sceneData[0].name)
 }

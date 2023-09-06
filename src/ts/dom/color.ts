@@ -6,14 +6,23 @@ interface _Color {
 }
 
 export function colorToString(color: Color): string {
-    return color.red.toString(16) + color.green.toString(16) + color.blue.toString(16)
+    const clr = colorToInts(color)
+    return clr.map((x) => paddedToString(x)).reduce((acc, n) => acc + n)
+}
+
+function paddedToString(n: number): string {
+    const str = n.toString(16)
+    if (str.length < 2) {
+        return "0" + str
+    }
+    else return str
 }
 
 export function stringToColor(str: string): Color {
     if (str.startsWith('#')) { str = str.substring(1) }
-    let r = str.substring(0, 2)
-    let g = str.substring(2, 4)
-    let b = str.substring(4, 6)
+    const r = str.substring(0, 2)
+    const g = str.substring(2, 4)
+    const b = str.substring(4, 6)
     return {
         red: Number.parseInt(r, 16),
         green: Number.parseInt(g, 16),
@@ -22,17 +31,21 @@ export function stringToColor(str: string): Color {
 }
 
 export function colorToFloats(color: Color): [number, number, number] {
-    let r = color.red / 255.0
-    let g = color.green / 255.0
-    let b = color.blue / 255.0
+    const r = color.red / 255.0
+    const g = color.green / 255.0
+    const b = color.blue / 255.0
     return [r, g, b]
 }
 
 export function floatsToColor(floats: [number, number, number]): Color {
-    let vals = floats.map((num) => num * 255)
+    const vals = floats.map((num) => num * 255)
     return {red: vals[0], green: vals[1], blue: vals[2]}
 }
 
 export function colorStringToFloats(str: string): [number, number, number] {
     return colorToFloats(stringToColor(str))
+}
+
+export function colorToInts(color: Color): [number, number, number] {
+    return [Math.round(color.red * 255), Math.round(color.green * 255), Math.round(color.blue * 255),]
 }

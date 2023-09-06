@@ -1,12 +1,18 @@
-#version 460 core
+#version 100
 
-layout(location=0) uniform vec2 iResolution;
-layout(location=2) uniform float iTime;
+#define MILLISECONDS 1000.0
+
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform vec2 iResolution;
+uniform float iTime;
 // colors
-layout(location=3) uniform vec3 colors[2];
+uniform vec3 colors[2];
 // others
 //fuckin idk
-out vec4 fragColor;
 
 vec2 polarCoord(vec2 coord, vec2 resolution) {
     vec2 uv = (coord - resolution.xy * .5); // get vector to centre
@@ -21,5 +27,5 @@ void main() {
     vec2 fragCoord = gl_FragCoord.xy;
     vec2 pos = polarCoord(fragCoord.xy, iResolution.xy);
 
-    fragColor = vec4(mix(colors[0], colors[1], pos.x), 1.0);
+    gl_FragColor = vec4(mix(colors[0], colors[1], pos.x), 1.0);
 }
