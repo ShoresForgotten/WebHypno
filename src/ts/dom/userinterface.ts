@@ -1,4 +1,4 @@
-import { Color, colorToString, stringToColor } from "./color.js"
+import { Color, colorEqual, colorToString, stringToColor } from "./color.js"
 import { UserSetting, ColorSetting, NumberSetting, Renderer, Scene } from "./graphics.js"
 import { AppState, StateChange } from "./main.js"
 
@@ -23,9 +23,13 @@ function generateSettingsWidget(setting: UserSetting): HTMLElement {
         }
         case "multi": {
             let element = document.createElement("div")
-            element.classList.add("multisetting")
+            element.classList.add("multi-setting")
+            element.classList.add("setting")
+            element.classList.add("setting-toplevel")
             setting.settings.forEach((setting) => {
-                element.appendChild(generateSettingsWidget(setting))
+                const widget = generateSettingsWidget(setting)
+                widget.classList.remove("setting-toplevel")
+                element.appendChild(widget)
             })
             return element
         }
@@ -37,20 +41,29 @@ function generateSettingsWidget(setting: UserSetting): HTMLElement {
  * @param setting - The setting to be controlled by the element
  * @returns An Input elment of type number
  */
-function generateNumberInputWidget(setting: NumberSetting): HTMLInputElement {
-    let element = document.createElement("input")
-    element.type = "number"
-    element.placeholder = setting.name
-    if (setting.min != null) element.min = setting.min.toString()
-    if (setting.max != null) element.max = setting.max.toString()
-    if (setting.whole === false) element.step = "any"
-    element.value = setting.value.toString()
-    element.addEventListener("change", (event) => {
-        const input = element.valueAsNumber
-        const callbackReturn = setting.set(input)
-        const diff = input - callbackReturn
-            if (Math.abs(diff) > allowableDifference) console.log(`Mismatch in input and returned value\nInput: ${input}\nReturn: ${callbackReturn}`)
+function generateNumberInputWidget(setting: NumberSetting): HTMLDivElement {
+    let element = document.createElement("div")
+    let title = document.createElement("p")
+    title.textContent = setting.name
+    title.classList.add("setting-name")
+    let input = document.createElement("input")
+    input.type = "number"
+    input.placeholder = setting.name
+    if (setting.min != null) input.min = setting.min.toString()
+    if (setting.max != null) input.max = setting.max.toString()
+    if (setting.whole === false) input.step = "any"
+    input.value = setting.value.toString()
+    input.addEventListener("change", (event) => {
+        const inputVal = input.valueAsNumber
+        const callbackReturn = setting.set(inputVal)
+        const diff = inputVal - callbackReturn
+            if (Math.abs(diff) > allowableDifference) console.log(`Mismatch in input and returned value\nInput: ${inputVal}\nReturn: ${callbackReturn}`)
     })
+    element.appendChild(title)
+    element.appendChild(input)
+    element.classList.add("setting")
+    element.classList.add("number-setting")
+    element.classList.add("setting-toplevel")
     return element
 }
 
@@ -60,28 +73,37 @@ function generateNumberInputWidget(setting: NumberSetting): HTMLInputElement {
  * @param setting - The setting to be controlled by the element
  * @returns Either an input element of type color or an input element of type text
  */
-function generateColorInputWidget(setting: ColorSetting): HTMLInputElement {
-    let element = document.createElement("input")
+function generateColorInputWidget(setting: ColorSetting): HTMLDivElement {
+    let element = document.createElement("div")
+    let title = document.createElement("p")
+    title.textContent = setting.name
+    title.classList.add("setting-name")
+    let input = document.createElement("input")
     if (navigator.userAgent.includes("Firefox") && navigator.userAgent.includes("Android")) { // Firefox android doesn't fully support color input widgets
-        element.type = "text"
-        element.placeholder = setting.name
-        element.addEventListener("change", (event) => {
-            const input = stringToColor(element.value)
-            const callbackReturn = setting.set(input)
-            if (input != callbackReturn) console.log(`Mismatch in input and returned value\nInput: ${input}\nReturn: ${callbackReturn}`)
+        input.type = "text"
+        input.placeholder = setting.name
+        input.addEventListener("change", (event) => {
+            const inputVal = stringToColor(input.value)
+            const callbackReturn = setting.set(inputVal)
+            if (!colorEqual(inputVal, callbackReturn)) console.log(`Mismatch in input and returned value\nInput: ${inputVal}\nReturn: ${callbackReturn}`)
         })
-        element.pattern = /\#?[a-fA-F0-9]{6}/.source
+        input.pattern = /\#?[a-fA-F0-9]{6}/.source
     }
     else {
-        element.type = "color"
+        input.type = "color"
         //element.placeholder = setting.name // How to do this in a color input element
-        element.value = '#' + colorToString(setting.value)
-        element.addEventListener("change", (event) => {
-            const input = stringToColor(element.value)
-            const callbackReturn = setting.set(input)
-            if (input != callbackReturn) console.log(`Mismatch in input and returned value\nInput: ${input}\nReturn: ${callbackReturn}`)
+        input.value = '#' + colorToString(setting.value)
+        input.addEventListener("change", (event) => {
+            const inputVal = stringToColor(input.value)
+            const callbackReturn = setting.set(inputVal)
+            if (!colorEqual(inputVal, callbackReturn)) console.log(`Mismatch in input and returned value\nInput: ${inputVal}\nReturn: ${callbackReturn}`)
         })
     }
+    element.appendChild(title)
+    element.appendChild(input)
+    element.classList.add("setting")
+    element.classList.add("number-setting")
+    element.classList.add("setting-toplevel")
     return element
 }
 
@@ -91,15 +113,11 @@ function generateColorInputWidget(setting: ColorSetting): HTMLInputElement {
  * @param stateChange - What to do on a change in app state
  * @returns A div containing the settings menu
  */
-export function createSettingsUI(state: AppState, stateChange: (change: StateChange) => void): HTMLDivElement {
-    const element = document.createElement("div")
+export function createSettingsUI(state: AppState, stateChange: (change: StateChange) => void): HTMLElement[] {
     const renderSelector = createRenderSelector(state.availableRenderers, state.activeRenderer, (renderer) => stateChange({type: "renderer", newRenderer: renderer}))
-    const sceneSelector = createSceneSelector(state.activeRenderer.getScenes(), state.activeScene, (scene) => stateChange({type: "scene", newScene: scene}))
+    const sceneSelector = createSceneSelector(state.activeRenderer.getScenes(), state.activeScene, state.debug, (scene) => stateChange({type: "scene", newScene: scene}))
     const settingsArea = createSceneSettings(state.activeScene.getSettings())
-    element.appendChild(renderSelector)
-    element.appendChild(sceneSelector)
-    element.appendChild(settingsArea)
-    return element
+    return [renderSelector, sceneSelector, settingsArea]
 }
 
 /**
@@ -138,18 +156,24 @@ function createRenderSelector(renderers: Map<string, Renderer>, activeRenderer: 
  * @param onChange - What do do on change
  * @returns A select element
  */
-function createSceneSelector(scenes: Map<string, Scene>, activeScene: Scene, onChange: (newSelection: Scene) => void): HTMLSelectElement {
+function createSceneSelector(scenes: Map<number, Scene>, activeScene: Scene, debug: boolean, onChange: (newSelection: Scene) => void): HTMLSelectElement {
     const selector = document.createElement("select")
+    const sortedScenes = Array.from(scenes).sort((a, b) => {return a[0] - b[0]})
     selector.classList.add("scene-selector")
-    scenes.forEach((val, key) => {
-        const option = document.createElement("option")
-        option.text = val.name
-        option.value = key
-        if (val === activeScene) {option.defaultSelected = true; option.selected = true}
-        selector.add(option)
+    sortedScenes.forEach(([id, scene]) => {
+        if (!scene.debug || debug) {
+            const option = document.createElement("option")
+            option.text = scene.name
+            option.value = id.toString()
+            if (scene === activeScene) {
+                option.defaultSelected = true
+                option.selected = true
+            }
+            selector.add(option)
+        }
     })
     selector.addEventListener("change", ((_event) => {
-        const key = selector.value
+        const key = Number.parseInt(selector.value)
         const scene = scenes.get(key)
         if (typeof scene === "undefined") {
             console.error("Tried to select a scene which does not exist in the scene hashmap")

@@ -1,6 +1,7 @@
 {
     "name": "Forgotten Hypno",
     "display": "fullscreen",
+    "start_url": "./index.html",
     "icons": [
         {
             "src": "tempicon.jpg",

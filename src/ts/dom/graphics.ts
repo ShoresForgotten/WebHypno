@@ -60,9 +60,9 @@ export interface MultiSetting {
 export interface Renderer {
     /**
      * Get the scenes that a given renderer has loaded
-     * @returns A map where the keys are scene names and the values are scene objects
+     * @returns A map where the keys are scene ids and the values are scene objects
      */
-    readonly getScenes: () => Map<string, Scene>
+    readonly getScenes: () => Map<number, Scene>
     /**
      * Pass on the new size of a canvas resize to the renderer and the scenes within
      * @param width - The new width of the canvas
@@ -82,6 +82,10 @@ export interface Scene {
      */
     readonly name: string
     /**
+     * Should this scene only be viewable while in debug mode
+     */
+    readonly debug: boolean
+    /**
      * Pass on the new size of a renderer to the objeccts within the scene
      * @param width - The new width of the renderer
      * @param height - The new height of the renderer
@@ -100,17 +104,17 @@ export interface Scene {
  * An index of scenes and where to get the information to build them
  */
 export interface Index {
-    readonly webgl: Map<string, string>
+    readonly webgl: Map<number, string>
 }
 
 /**
  * Create a renderer
- * @param type What kind of renderer to create (currently only webgl is available)
- * @param init The scene to create and use first
- * @param ctx The webgl context to use
- * @param index The index of scenes and scene information files to use to create scenes
+ * @param type - What kind of renderer to create (currently only webgl is available)
+ * @param init - The scene to create and use first
+ * @param ctx - The webgl context to use
+ * @param index - The index of scenes and scene information files to use to create scenes
  * @returns A tuple containing the renderer and the initial scene (...eventually)
  */
-export async function initRenderer(type: "webgl", init: string, ctx: WebGLRenderingContext, index: Map<string, string>, update: (change: StateChange) => void): Promise<[Renderer, Scene]> {
+export async function initRenderer(type: "webgl", init: number, ctx: WebGLRenderingContext, index: Map<number, string>, update: (change: StateChange) => void): Promise<[Renderer, Scene]> {
         return createGLRenderer(ctx, init, index, update)
 }

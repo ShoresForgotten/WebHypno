@@ -290,7 +290,7 @@ async function fetchShader(infoFileName: string): Promise<[GLUIShaderInfo, strin
  * @param stateUpdate - An anonymous function that informs the global application state about renderer updates
  * @returns A renderer and an initial scene
  */
-export async function createRenderer(ctx: WebGLRenderingContext, init: string, index: Map<string, string>, stateUpdate: (state: StateChange) => void): Promise<[Renderer, Scene]> {
+export async function createRenderer(ctx: WebGLRenderingContext, init: number, index: Map<number, string>, stateUpdate: (state: StateChange) => void): Promise<[Renderer, Scene]> {
     const initPath = index.get(init)
     if (initPath === undefined) throw new Error("Initial shader is not in provided map")
     const shaderPromise = fetchShader(initPath)
@@ -302,10 +302,10 @@ export async function createRenderer(ctx: WebGLRenderingContext, init: string, i
             throw new Error(`Error in getting any filename from index.\nIndex: ${index}`)
         }
     }
-    const toGet: string[] = []
+    const toGet: [number, string][] = []
     index.forEach((val, key) => {
         if (val != initFileName) {
-            toGet.push(val)
+            toGet.push([key, val])
         }
     })
     const scene = loadScene(ctx, initFileName, vaoExt)
@@ -314,10 +314,10 @@ export async function createRenderer(ctx: WebGLRenderingContext, init: string, i
     ctx.enable(ctx.DEPTH_TEST)
     ctx.depthFunc(ctx.LEQUAL)
     const renderer: Promise<Renderer> = scene.then((scene) => {
-        const scenes = new Map<string, Scene>([[scene.name, scene]])
-        toGet.forEach((val) => {
+        const scenes = new Map<number, Scene>([[init, scene]])
+        toGet.forEach(([key, val]) => {
             loadScene(ctx, val, vaoExt).then((scene) => {
-                scenes.set(scene.name, scene)
+                scenes.set(key, scene)
                 stateUpdate({type: "sceneAdded"})
             })
         })
@@ -346,9 +346,10 @@ export async function createRenderer(ctx: WebGLRenderingContext, init: string, i
  * @param draw - How to draw the scene
  * @returns A scene
  */
-function createGLScene(ctx: WebGLRenderingContext, settableObjects: GLUserSettableObject[], regularObjects: GLRegularObject[], name: string, draw?: () => void): Scene {
+function createGLScene(ctx: WebGLRenderingContext, settableObjects: GLUserSettableObject[], regularObjects: GLRegularObject[], name: string, debug: boolean, draw?: () => void): Scene {
     return {
         name: name,
+        debug: debug,
         resize: (width: number, height: number) => {
             regularObjects.forEach((obj) => {
                 if (obj.frameResize) obj.frameResize(width, height)
@@ -455,5 +456,5 @@ async function loadScene(ctx: WebGLRenderingContext, fileName: string, ext: (OES
         if (obj.frameResize) {
             obj.frameResize(ctx.drawingBufferWidth, ctx.drawingBufferHeight)
         }
-        return createGLScene(ctx, [obj], [], sceneData[0].name)
+        return createGLScene(ctx, [obj], [], sceneData[0].name, sceneData[0].debugOnly)
 }

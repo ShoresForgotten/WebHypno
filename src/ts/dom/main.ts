@@ -17,9 +17,9 @@ async function getIndex(url: string): Promise<Index> {
         .then((response) => response.json())
         .then((json: any) => {
             if ("webgl" in json) {
-                const map = new Map<string, string>
+                const map = new Map<number, string>
                 json.webgl.forEach((obj: any) => {
-                    map.set(obj.name, obj.file)
+                    map.set(obj.id, obj.file)
                 })
                 return {webgl: map}
             }
@@ -48,8 +48,22 @@ function createGLContext(): [HTMLCanvasElement, WebGLRenderingContext] | null {
  * Entry point
  */
 async function init(): Promise<void> {
+    const warning = document.getElementById("warning")
+    const skip = localStorage.getItem("skipWarning")
+    if (!(skip && skip === "true") && warning) {
+        warning.hidden = false
+        document.getElementById("pass-gate")?.addEventListener("click", () => {
+            const checkbox: HTMLElement | null = document.getElementById("remember-warning")
+            if (checkbox && checkbox instanceof HTMLInputElement && checkbox.checked) {
+                localStorage.setItem("skipWarning", "true")
+            }
+            warning.hidden = true
+        })
+    }
+
     const indexLocation = "/shaders/index.json"
     const indexPromise = getIndex(indexLocation)
+    const uiHider = document.getElementById("ui-hider")
     const availableRenderers = new Map<string, Renderer>()
     const glContext = createGLContext()
     const rendererUpdateQueue: StateChange[] = []
@@ -57,18 +71,21 @@ async function init(): Promise<void> {
     if (glContext != null) {
         glContext[0].id = "webgl-renderer"
         glContext[0].classList.add("renderer")
-        glRenderer = await initRenderer("webgl", "test", glContext[1], (await indexPromise).webgl, (stateChange) => {rendererUpdateQueue.push(stateChange)})
+        glRenderer = await initRenderer("webgl", 1, glContext[1], (await indexPromise).webgl, (stateChange) => {rendererUpdateQueue.push(stateChange)})
         availableRenderers.set("webgl", glRenderer[0])
+        if (uiHider) {
+            addShowUIFunctionality(glContext[0], () => {uiHider.hidden = false})
+        }
     }
     else {
         throw new Error("fuck")
     }
-    const state: AppState = {activeRenderer: glRenderer[0], activeScene: glRenderer[1], availableRenderers: availableRenderers}
+    const state: AppState = {activeRenderer: glRenderer[0], activeScene: glRenderer[1], availableRenderers: availableRenderers, uiVisible: false, debug: true}
+    const settingsConainer = document.getElementById("ui")
     const stateChange = (change: StateChange) => {
         changeState(state, change)
-        const elem = document.getElementById("ui-container")
-        if (elem) {
-            elem.replaceChildren(createSettingsUI(state, stateChange))
+        if (settingsConainer) {
+            settingsConainer.replaceChildren(...createSettingsUI(state, stateChange))
         }
     }
     const renderLoop = (t: number) => {
@@ -80,9 +97,54 @@ async function init(): Promise<void> {
         resize(glRenderer[0])
         state.activeScene.draw(t)
     }
-    document.getElementById("ui-container")?.appendChild(createSettingsUI(state, stateChange))
+    settingsConainer?.replaceChildren(...createSettingsUI(state, stateChange))
+    if (uiHider) {
+        document.getElementById("ui-close")?.addEventListener("click", () => {
+            uiHider.hidden = true
+        })
+    }
     document.body.appendChild(glContext[0])
     renderLoop(performance.now())
+}
+
+/**
+ * Put the show UI listeners on the given canvas.
+ * If the browser has no touchscreen, it's double click (900ms)
+ * If the browser has a touchscreen, swiping down works too
+ * @param canvas The canvas to attach the event listeners to
+ * @param showUI What to do when the UI is to be shown
+ */
+function addShowUIFunctionality(canvas: HTMLCanvasElement, showUI: () => void) {
+    if (navigator.maxTouchPoints > 0) {
+        let start: Touch | null
+        canvas.addEventListener("touchstart", (event) => {
+            if (event.touches.length === 1) {
+                start = event.touches.item(0)
+            }
+            else {
+                start = null
+            }
+        })
+        canvas.addEventListener("touchmove", (event) => {
+            if (start) {
+                console.log(start)
+                let currentTouch = event.touches.item(0)
+                if (currentTouch) {
+                    if (currentTouch.clientY - start.clientY > (canvas.clientHeight * 0.25)) {
+                        showUI()
+                    }
+                }
+            }
+        })
+    }
+    let lastClick = performance.now() - 900 // Put it in the past so one click doesn't open for the first 0.9 seconds
+    canvas.addEventListener("click", () => {
+        let now = performance.now()
+        if ((now - lastClick) <= 900) {
+            showUI()
+        }
+        lastClick = now
+    })
 }
 
 /**
@@ -112,6 +174,8 @@ export interface AppState {
     availableRenderers: Map<string, Renderer>
     activeRenderer: Renderer
     activeScene: Scene
+    uiVisible: boolean
+    debug: boolean
 }
 
 /**

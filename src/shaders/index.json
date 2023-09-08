@@ -1,10 +1,10 @@
 {
     "webgl": [
-        {"name": "test", "file": "test.frag.json"},
-        {"name": "spiral", "file": "spiral.frag.json"},
-        {"name": "2ring", "file": "2ring.frag.json"},
-        {"name": "4ring", "file": "4ring.frag.json"},
-        {"name": "6ring", "file": "6ring.frag.json"},
-        {"name": "radial_fade", "file": "radial_fade.frag.json"}
+        {"id": 0, "file": "test.frag.json"},
+        {"id": 1, "file": "spiral.frag.json"},
+        {"id": 2, "file": "2ring.frag.json"},
+        {"id": 3, "file": "4ring.frag.json"},
+        {"id": 4, "file": "6ring.frag.json"},
+        {"id": 5, "file": "radial_fade.frag.json"}
     ]
 }

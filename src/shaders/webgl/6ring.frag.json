@@ -16,11 +16,11 @@
             "type": "float",
             "name": "Speed",
             "accessor": "speed",
-            "init": -0.1
+            "init": -0.5
         },
         {
             "type": "multi",
-            "name": "Ring One",
+            "name": "Ring One Color & Size",
             "settings": [
                 {
                     "type": "color",
@@ -39,7 +39,7 @@
         },
         {
             "type": "multi",
-            "name": "Ring Two",
+            "name": "Ring Two Color & Size",
             "settings": [
                 {
                     "type": "color",
@@ -58,7 +58,7 @@
         },
         {
             "type": "multi",
-            "name": "Ring Three",
+            "name": "Ring Three Color & Size",
             "settings": [
                 {
                     "type": "color",
@@ -77,7 +77,7 @@
         },
         {
             "type": "multi",
-            "name": "Ring Four",
+            "name": "Ring Four Color & Size",
             "settings": [
                 {
                     "type": "color",
@@ -96,7 +96,7 @@
         },
         {
             "type": "multi",
-            "name": "Ring Five",
+            "name": "Ring Five Color & Size",
             "settings": [
                 {
                     "type": "color",
@@ -115,7 +115,7 @@
         },
         {
             "type": "multi",
-            "name": "Ring Six",
+            "name": "Ring Six Color & Size",
             "settings": [
                 {
                     "type": "color",

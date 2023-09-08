@@ -49,3 +49,9 @@ export function colorStringToFloats(str: string): [number, number, number] {
 export function colorToInts(color: Color): [number, number, number] {
     return [Math.round(color.red * 255), Math.round(color.green * 255), Math.round(color.blue * 255),]
 }
+
+export function colorEqual(colorOne: Color, colorTwo: Color): boolean {
+    return (colorOne.red === colorTwo.red &&
+            colorOne.green === colorTwo.green &&
+            colorOne.blue === colorTwo.blue)
+}

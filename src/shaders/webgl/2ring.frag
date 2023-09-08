@@ -50,7 +50,7 @@ void main() {
     // Dividing sizeSum by the length to keep zoom based on [1.,1.]
     float ringsWidth = 1. / zoom;
     // Wrap around until we've got a position within [0.0, twoRingWidth)
-    float ringPos = mod(pos.x + time * speed, ringsWidth);
+    float ringPos = mod(pos.x + (time * speed) / zoom, ringsWidth);
     // Divide by twoRingWidth to get back into [0.0, 1.0]
     if (ringPos / ringsWidth < scaledSizes[0]){
         gl_FragColor = vec4(colors[0], 1.);

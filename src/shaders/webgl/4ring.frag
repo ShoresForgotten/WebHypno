@@ -36,7 +36,7 @@ void main() {
     // How wide a group of rings is.
     float ringsWidth = 1. / zoom;
     // Wrap around until we've got a position within [0.0, twoRingWidth)
-    float ringPos = mod(pos.x + time * speed, ringsWidth);
+    float ringPos = mod(pos.x + (time * speed) / zoom, ringsWidth);
     // Divide by twoRingWidth to get back into [0.0, 1.0]
     float relativeRingPos = ringPos / ringsWidth;
 

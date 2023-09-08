@@ -1,11 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <link rel="mainfest" href="mainfest.json" />
+        <title>Forgotten Hypno</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="manifest" href="manifest.json" />
         <link rel="stylesheet" href="style.css" />
     </head>
     <body>
-        <div id="ui-container"></div>
+        <div id="warning" hidden>
+            <p>This website is designed to replicate visuals commonly seen in hypnokink media.</p>
+            <p>Additionally, it may contain bright, flashing lights</p>
+            <strong>If you are prone to epileptic seizures, this website may be hazardous.</strong>
+            <strong>If you are under the age of 18, please close this website</strong>
+            <div id="gate-pass">
+                <div>
+                    <input type="checkbox" id="remember-warning">
+                    <label for="remember-warning">Do not ask me again</label>
+                </div>
+                <div>
+                    <button id="pass-gate">Continue</button>
+                </div>
+            </div>
+        </div>
+        <div id="ui-hider" hidden> <!--grumble grumble flex disabling hidden grumble-->
+        <div id="ui-container">
+            <div id="ui"></div>
+            <button id="ui-close" type="button">Close settings</button>
+        </div>
+    </div>
         <script src="js/main.js" type="module"></script>
+        <p id="no-renderer">This website requires javascript and webgl to function.</p>
+        <script>document.getElementById("no-renderer").hidden = true;</script>
     </body>
 </html>

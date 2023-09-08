@@ -16,11 +16,11 @@
             "type": "float",
             "name": "Speed",
             "accessor": "speed",
-            "init": -0.1
+            "init": -0.5
         },
         {
             "type": "multi",
-            "name": "Ring One",
+            "name": "Ring One Color & Size",
             "settings": [
                 {
                     "type": "color",
@@ -39,7 +39,7 @@
         },
         {
             "type": "multi",
-            "name": "Ring Two",
+            "name": "Ring Two Color & Size",
             "settings": [
                 {
                     "type": "color",

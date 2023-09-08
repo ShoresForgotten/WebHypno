@@ -1,5 +1,5 @@
 .renderer {
-    z-index: 0;
+    z-index: 1;
     height: 100%;
     width: 100%;
     margin: 0;
@@ -8,12 +8,80 @@
     position: fixed;
 }
 
-#ui-container {
-    z-index: 1;
+.multi-setting {
+    display: flex;
+    flex-direction: row;
+}
+
+.setting {
+    margin: 0.25em;
+    padding-bottom: 0.25em;
+    align-items: center;
+    text-align: center;
+}
+
+.setting-toplevel {
+    border-top-color: #00000077;
+    border-top-width: 0.25em;
+    border-top-style: solid;
+}
+
+.setting-name {
+    font-weight: bold;
+    margin-top: 0.25em;
+}
+
+#ui-close {
+    flex: 1;
+    max-width: 7.5em;
+    float: right;
+    height: 4em;
+}
+
+#warning {
+    padding-top: 2em;
+    padding-left: 1em;
+    padding-right: 1em;
+    z-index: 10;
     position: fixed;
     width: 100%;
     height: 100%;
+    color: #ffffff;
+    background: #000000;
+    text-align: center;
+}
+
+#ui-container {
+    gap: 1em;
+    z-index: 2;
+    position: fixed;
+    display: flex;
+    flex-direction: row;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    padding: 1em;
     background: rgba(0, 0, 0, .5);
+    color: #ffffff
+}
+
+#no-renderer {
+    width: 100%;
+    text-align: center;
+    z-index: 0;
+    position: fixed;
+    text-align: center;
+    color:#ffffff;
+}
+
+#ui {
+    flex: 4;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    align-items: center;
+    overflow: auto;
+    min-width: 100px;
 }
 
 html, body {
@@ -21,4 +89,5 @@ html, body {
     height: 100%;
     margin: 0;
     display: block;
+    background-color: #000000;
 }
