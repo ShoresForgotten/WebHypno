@@ -1,6 +1,6 @@
 import { Color, colorEqual, colorToString, stringToColor } from "./color.js"
 import { UserSetting, ColorSetting, NumberSetting, Renderer, Scene } from "./graphics.js"
-import { AppState, StateChange } from "./main.js"
+import { AppState, RendererState, StateChange } from "./main.js"
 
 interface UIState {
     createUI(renderer: Renderer, scene: Scene): HTMLDivElement
@@ -108,14 +108,14 @@ function generateColorInputWidget(setting: ColorSetting): HTMLDivElement {
 }
 
 /**
- * Create and return an element with elements for every user settable settings
+ * Create and return a div with input elements for everything to do with the background animation
  * @param state - The app state to create the UI from
  * @param stateChange - What to do on a change in app state
  * @returns A div containing the settings menu
  */
-export function createSettingsUI(state: AppState, stateChange: (change: StateChange) => void): HTMLElement[] {
+export function createBackgroundSettingsUI(state: RendererState, debug: boolean, stateChange: (change: StateChange) => void): HTMLElement[] {
     const renderSelector = createRenderSelector(state.availableRenderers, state.activeRenderer, (renderer) => stateChange({type: "renderer", newRenderer: renderer}))
-    const sceneSelector = createSceneSelector(state.activeRenderer.getScenes(), state.activeScene, state.debug, (scene) => stateChange({type: "scene", newScene: scene}))
+    const sceneSelector = createSceneSelector(state.activeRenderer.getScenes(), state.activeScene, debug, (scene) => stateChange({type: "scene", newScene: scene}))
     const settingsArea = createSceneSettings(state.activeScene.getSettings())
     return [renderSelector, sceneSelector, settingsArea]
 }

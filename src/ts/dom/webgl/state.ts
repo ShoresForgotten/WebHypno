@@ -291,9 +291,6 @@ async function fetchShader(infoFileName: string): Promise<[GLUIShaderInfo, strin
  * @returns A renderer and an initial scene
  */
 export async function createRenderer(ctx: WebGLRenderingContext, init: number, index: Map<number, string>, stateUpdate: (state: StateChange) => void): Promise<[Renderer, Scene]> {
-    const initPath = index.get(init)
-    if (initPath === undefined) throw new Error("Initial shader is not in provided map")
-    const shaderPromise = fetchShader(initPath)
     const vaoExt = ctx.getExtension("OES_vertex_array_object")
     let initFileName = index.get(init)
     if (!initFileName) {
@@ -304,7 +301,7 @@ export async function createRenderer(ctx: WebGLRenderingContext, init: number, i
     }
     const toGet: [number, string][] = []
     index.forEach((val, key) => {
-        if (val != initFileName) {
+        if (val !== initFileName) {
             toGet.push([key, val])
         }
     })

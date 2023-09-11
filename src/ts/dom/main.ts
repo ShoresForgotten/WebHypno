@@ -1,5 +1,5 @@
 import { Index, Renderer, Scene, initRenderer } from "./graphics.js"
-import { createSettingsUI } from "./userinterface.js"
+import { createBackgroundSettingsUI } from "./userinterface.js"
 
 /**
  * Get the index of shader info locations
@@ -80,12 +80,12 @@ async function init(): Promise<void> {
     else {
         throw new Error("fuck")
     }
-    const state: AppState = {activeRenderer: glRenderer[0], activeScene: glRenderer[1], availableRenderers: availableRenderers, uiVisible: false, debug: true}
+    const state: AppState = {activeUI: "renderer", rendererState: {activeRenderer: glRenderer[0], activeScene: glRenderer[1], availableRenderers: availableRenderers}, uiVisible: false, debug: true}
     const settingsConainer = document.getElementById("ui")
     const stateChange = (change: StateChange) => {
         changeState(state, change)
         if (settingsConainer) {
-            settingsConainer.replaceChildren(...createSettingsUI(state, stateChange))
+            settingsConainer.replaceChildren(...createBackgroundSettingsUI(state.rendererState, state.debug, stateChange))
         }
     }
     const renderLoop = (t: number) => {
@@ -95,9 +95,9 @@ async function init(): Promise<void> {
             stateChange(nextQueue)
         }
         resize(glRenderer[0])
-        state.activeScene.draw(t)
+        state.rendererState.activeScene.draw(t)
     }
-    settingsConainer?.replaceChildren(...createSettingsUI(state, stateChange))
+    settingsConainer?.replaceChildren(...createBackgroundSettingsUI(state.rendererState, state.debug, stateChange))
     if (uiHider) {
         document.getElementById("ui-close")?.addEventListener("click", () => {
             uiHider.hidden = true
@@ -171,11 +171,16 @@ function resize(renderer: Renderer) {
  * The top-level state of the application
  */
 export interface AppState {
+    activeUI: "renderer"
+    rendererState: RendererState
+    uiVisible: boolean
+    debug: boolean
+}
+
+export interface RendererState {
     availableRenderers: Map<string, Renderer>
     activeRenderer: Renderer
     activeScene: Scene
-    uiVisible: boolean
-    debug: boolean
 }
 
 /**
@@ -187,12 +192,12 @@ export interface AppState {
 function changeState(state: AppState, change: StateChange): AppState {
     switch (change.type) {
         case "renderer": {
-            state.activeRenderer = change.newRenderer
+            state.rendererState.activeRenderer = change.newRenderer
             // todo
             return state
         }
         case "scene": {
-            state.activeScene = change.newScene
+            state.rendererState.activeScene = change.newScene
             return state
         }
         case "sceneAdded": {
@@ -214,4 +219,17 @@ export type StateChange = {
 | { type: "sceneAdded"
 }
 
-document.addEventListener("DOMContentLoaded", () => {init()})
+
+async function registerServiceWorker() {
+    if ("serviceWorker" in navigator) {
+        try {
+            const registration = await navigator.serviceWorker.register("/serviceworker.js", {scope: '/'})
+        }
+        catch (err) {
+            console.error(`Service worker registration failed with ${err}`)
+        }
+    }
+}
+
+registerServiceWorker()
+init()

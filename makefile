@@ -5,7 +5,8 @@ dom:
 	tsc -p src/ts/dom/tsconfig.json --outDir ${OUTDIR}/js
 
 webworker:
-	tsc -p src/ts/webworker/tsconfig.json --outDir ${OUTDIR}/js/serviceworker
+	tsc -p src/ts/webworker/tsconfig.json --outDir ${OUTDIR}
+	sed -i '$$d' ${OUTDIR}/serviceworker.js
 
 shaders: .FORCE
 	mkdir -p ${OUTDIR}/shaders

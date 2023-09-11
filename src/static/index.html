@@ -23,11 +23,13 @@
             </div>
         </div>
         <div id="ui-hider" hidden> <!--grumble grumble flex disabling hidden grumble-->
-        <div id="ui-container">
-            <div id="ui"></div>
-            <button id="ui-close" type="button">Close settings</button>
+            <div id="ui-container">
+                <div id="meta-ui">
+                    <button id="ui-close" type="button">Close settings</button>
+                </div>
+                <div id="ui"></div>
+            </div>
         </div>
-    </div>
         <script src="js/main.js" type="module"></script>
         <p id="no-renderer">This website requires javascript and webgl to function.</p>
         <script>document.getElementById("no-renderer").hidden = true;</script>
