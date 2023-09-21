@@ -1,6 +1,6 @@
 // WebGL state handling types and functions
 import { GLMesh, GLObject, drawObject, simpleFullscreenShader } from "./rendering.js"
-import { Renderer, Scene, UserSetting } from "../graphics.js"
+import { Renderer, Scene, SceneObject, UserSetting } from "../graphics.js"
 import { Color, colorToFloats, floatsToColor, colorStringToFloats } from "../color.js"
 import { StateChange } from "../main.js"
 
@@ -93,20 +93,20 @@ function isMultiUniform(o: any): o is GLMultiUniformInfo {
     if (typeof o === "object" && o !== null) {
         if (o.type === "multi" &&
             typeof o.name === "string" &&
-            (typeof o.settings === "object" && Array.isArray(o.settings))) {
-                const hits: boolean[] = o.settings.map((object: any) => {
+            Array.isArray(o.settings)) {
+                const badUniforms: any[] = o.settings.filter((object: any) => {
                     if (isFloatUniform(object) || isIntUniform(object) || isColorUniform(object) || isMultiUniform(object)) {
-                        return true
-                    }
-                    else {
                         return false
                     }
+                    else {
+                        return true
+                    }
                 })
-                if (hits.includes(false)) {
-                    return false
+                if (badUniforms.length === 0) {
+                    return true
                 }
                 else {
-                    return true
+                    return false
                 }
             }
         else {
@@ -135,7 +135,7 @@ export function createUIInfo(ctx: WebGLRenderingContext, program: WebGLProgram ,
             ctx.useProgram(program)
             const location = ctx.getUniformLocation(program, uniform.accessor)!
             const rawValue: Float32Array = ctx.getUniform(program, location)
-            const value: Color = { red: rawValue[0], green: rawValue[1], blue: rawValue[2]}
+            const value: Color = floatsToColor([rawValue[0], rawValue[1], rawValue[2]])
             const callback = (input: Color) => {
                 let vals = new Float32Array(colorToFloats(input))
                 ctx.useProgram(program)
@@ -285,7 +285,7 @@ async function fetchShader(infoFileName: string): Promise<[GLUIShaderInfo, strin
 /**
  * Create a WebGL renderer
  * @param ctx - The WebGLRenderingContext to use
- * @param init - The name of the shader to start with
+ * @param init - The index number of the shader to start with
  * @param index - The index containing all shader information files
  * @param stateUpdate - An anonymous function that informs the global application state about renderer updates
  * @returns A renderer and an initial scene
@@ -305,7 +305,7 @@ export async function createRenderer(ctx: WebGLRenderingContext, init: number, i
             toGet.push([key, val])
         }
     })
-    const scene = loadScene(ctx, initFileName, vaoExt)
+    const scene = loadScene(ctx, initFileName, init, vaoExt)
     ctx.clearColor(0.0, 0.0, 0.0, 1.0)
     ctx.clearDepth(1.0)
     ctx.enable(ctx.DEPTH_TEST)
@@ -313,12 +313,13 @@ export async function createRenderer(ctx: WebGLRenderingContext, init: number, i
     const renderer: Promise<Renderer> = scene.then((scene) => {
         const scenes = new Map<number, Scene>([[init, scene]])
         toGet.forEach(([key, val]) => {
-            loadScene(ctx, val, vaoExt).then((scene) => {
+            loadScene(ctx, val, key, vaoExt).then((scene) => {
                 scenes.set(key, scene)
                 stateUpdate({type: "sceneAdded"})
             })
         })
         return {
+            name: "WebGL",
             resize: (width?: number, height?: number) => {
                 const x = (width) ? width : ctx.canvas.width
                 const y = (height) ? height : ctx.canvas.height
@@ -343,9 +344,18 @@ export async function createRenderer(ctx: WebGLRenderingContext, init: number, i
  * @param draw - How to draw the scene
  * @returns A scene
  */
-function createGLScene(ctx: WebGLRenderingContext, settableObjects: GLUserSettableObject[], regularObjects: GLRegularObject[], name: string, debug: boolean, draw?: () => void): Scene {
+function createGLScene(ctx: WebGLRenderingContext, settableObjects: GLUserSettableObject[], regularObjects: GLRegularObject[], name: string, id: number, debug: boolean, draw?: () => void): Scene {
+    let counter: number = 0
+    const objects: SceneObject[] = settableObjects.map((obj) => {
+        return {
+            name: obj.name,
+            id: counter++,
+            settings: obj.userSettings.map((x) => createUIInfo(ctx, obj.obj.program, x))
+        }
+    })
     return {
         name: name,
+        id: id,
         debug: debug,
         resize: (width: number, height: number) => {
             regularObjects.forEach((obj) => {
@@ -370,14 +380,14 @@ function createGLScene(ctx: WebGLRenderingContext, settableObjects: GLUserSettab
                 obj.draw()
             })
         },
-        getSettings: () => {
-            const map = new Map<string, UserSetting[]>()
+        getObjects: () => {
+            const objects: SceneObject[] = []
             settableObjects.forEach((obj) => {
                 const settings = obj.userSettings.map((x) => createUIInfo(ctx, obj.obj.program, x))
-                map.set(obj.name, settings)
+                objects.push({name: obj.name, settings: settings, id: objects.length})
             })
-            return map
-        }
+            return objects
+        },
     }
 }
 
@@ -417,7 +427,7 @@ function initUniform(ctx: WebGLRenderingContext, program: WebGLProgram, info: GL
  * @param ext - VAO extension, if available
  * @returns A promise to return a scene
  */
-async function loadScene(ctx: WebGLRenderingContext, fileName: string, ext: (OES_vertex_array_object | null)): Promise<Scene> { // It would be nice to put this in a webworker or smth
+async function loadScene(ctx: WebGLRenderingContext, fileName: string, id: number, ext: (OES_vertex_array_object | null)): Promise<Scene> { // It would be nice to put this in a webworker or smth
         const sceneData = await fetchShader(fileName)
         const renderObj = simpleFullscreenShader(ctx, sceneData[1], ext)
 
@@ -453,5 +463,5 @@ async function loadScene(ctx: WebGLRenderingContext, fileName: string, ext: (OES
         if (obj.frameResize) {
             obj.frameResize(ctx.drawingBufferWidth, ctx.drawingBufferHeight)
         }
-        return createGLScene(ctx, [obj], [], sceneData[0].name, sceneData[0].debugOnly)
+        return createGLScene(ctx, [obj], [], sceneData[0].name, id, sceneData[0].debugOnly)
 }

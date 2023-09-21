@@ -38,7 +38,7 @@ export function colorToFloats(color: Color): [number, number, number] {
 }
 
 export function floatsToColor(floats: [number, number, number]): Color {
-    const vals = floats.map((num) => num * 255)
+    const vals = floats.map((num) => Math.floor(num * 255))
     return {red: vals[0], green: vals[1], blue: vals[2]}
 }
 
@@ -47,7 +47,7 @@ export function colorStringToFloats(str: string): [number, number, number] {
 }
 
 export function colorToInts(color: Color): [number, number, number] {
-    return [Math.round(color.red * 255), Math.round(color.green * 255), Math.round(color.blue * 255),]
+    return [Math.floor(color.red), Math.floor(color.green), Math.floor(color.blue)]
 }
 
 export function colorEqual(colorOne: Color, colorTwo: Color): boolean {

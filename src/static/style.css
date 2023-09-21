@@ -1,5 +1,21 @@
 .renderer {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    display: block;
+    position: fixed;
+}
+
+.background-renderer {
     z-index: 1;
+}
+.text-renderer {
+    z-index: 3;
+}
+
+#input-div {
+    z-index: 9;
     height: 100%;
     width: 100%;
     margin: 0;
@@ -57,7 +73,7 @@
 
 #ui-container {
     gap: 1em;
-    z-index: 2;
+    z-index: 10;
     position: fixed;
     display: flex;
     flex-direction: column;

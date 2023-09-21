@@ -9,6 +9,7 @@ const SOURCE_FILES = [
     "/js/userinterface.js",
     "/js/webgl/rendering.js",
     "/js/webgl/state.js",
+    "/js/2d/text.js",
 ]
 
 async function addResourcesToCache(resources: string[]) {
@@ -42,12 +43,8 @@ async function cacheFirst(request: Request): Promise<Response> {
 
 self.addEventListener("install", (event) => {
     event.waitUntil(getShaderFileLocations("/shaders/index.json").then((shaderFiles) => {
-        const list = ["/index.html", "/style.css"].concat(SOURCE_FILES).concat(shaderFiles)
-        console.log(list)
-        addResourcesToCache([
-            "/index.html",
-            "/style.css",
-        ].concat(SOURCE_FILES).concat(shaderFiles))
+        const list = ["/index.html", "/style.css", "/shaders/index.json"].concat(SOURCE_FILES).concat(shaderFiles)
+        addResourcesToCache(list)
     }))
 })
 

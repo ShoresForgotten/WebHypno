@@ -1,5 +1,7 @@
-import { Index, Renderer, Scene, initRenderer } from "./graphics.js"
-import { createBackgroundSettingsUI } from "./userinterface.js"
+import { createTextRenderer } from "./2d/text.js"
+import { Index, Layer, Renderer, Scene, SceneObject } from "./graphics.js"
+import { createSettingsUI } from "./userinterface.js"
+import { createRenderer as createGLRenderer }  from "./webgl/state.js"
 
 /**
  * Get the index of shader info locations
@@ -33,9 +35,24 @@ async function getIndex(url: string): Promise<Index> {
  */
 function createGLContext(): [HTMLCanvasElement, WebGLRenderingContext] | null {
     try {
-        const canvas = document.createElement('canvas')
+        const canvas = document.createElement("canvas")
         const ctx = canvas.getContext("webgl")
         if (ctx instanceof WebGLRenderingContext) return [canvas, ctx]
+        else return null
+    }
+    catch (err) {
+        console.error(err)
+        return null
+    }
+}
+
+function create2DContext(): [HTMLCanvasElement, CanvasRenderingContext2D] | null {
+    try {
+        const canvas = document.createElement("canvas")
+        canvas.height = screen.availHeight
+        canvas.width = screen.availWidth
+        const ctx = canvas.getContext("2d")
+        if (ctx instanceof CanvasRenderingContext2D) return [canvas, ctx]
         else return null
     }
     catch (err) {
@@ -64,46 +81,70 @@ async function init(): Promise<void> {
     const indexLocation = "/shaders/index.json"
     const indexPromise = getIndex(indexLocation)
     const uiHider = document.getElementById("ui-hider")
-    const availableRenderers = new Map<string, Renderer>()
+    const availableBackgroundRenderers = new Map<string, Renderer>()
     const glContext = createGLContext()
-    const rendererUpdateQueue: StateChange[] = []
+    const stateUpdateQueue: StateChange[] = []
     let glRenderer: [Renderer, Scene]
     if (glContext != null) {
         glContext[0].id = "webgl-renderer"
         glContext[0].classList.add("renderer")
-        glRenderer = await initRenderer("webgl", 1, glContext[1], (await indexPromise).webgl, (stateChange) => {rendererUpdateQueue.push(stateChange)})
-        availableRenderers.set("webgl", glRenderer[0])
-        if (uiHider) {
-            addShowUIFunctionality(glContext[0], () => {uiHider.hidden = false})
-        }
+        glContext[0].classList.add("background-renderer")
+        glRenderer = await createGLRenderer(glContext[1], 1, (await indexPromise).webgl, (stateChange) => {stateUpdateQueue.push(stateChange)})
+        availableBackgroundRenderers.set("webgl", glRenderer[0])
     }
     else {
         throw new Error("fuck")
     }
-    const state: AppState = {activeUI: "renderer", rendererState: {activeRenderer: glRenderer[0], activeScene: glRenderer[1], availableRenderers: availableRenderers}, uiVisible: false, debug: true}
+    const textContext = create2DContext()
+    let textRenderer: [Renderer, Scene]
+    if (textContext != null) {
+        textContext[0].id = "text-2d-renderer"
+        textContext[0].classList.add("renderer")
+        textContext[0].classList.add("text-renderer")
+        textRenderer = createTextRenderer(textContext[1], (stateChange) => {stateUpdateQueue.push(stateChange)})
+    }
+    else {
+        throw new Error("shit")
+    }
+    const state: AppState = {
+        activeUI: "background",
+        backgroundRendererState: buildRenderingState(availableBackgroundRenderers, glRenderer[0], glRenderer[1], glRenderer[1].getObjects()[0]),
+        textRendererState: buildRenderingState((new Map<string, Renderer>([["text", textRenderer[0]]])), textRenderer[0], textRenderer[1], textRenderer[1].getObjects()[0]),
+        uiVisible: false,
+        debug: true
+    }
     const settingsConainer = document.getElementById("ui")
     const stateChange = (change: StateChange) => {
         changeState(state, change)
         if (settingsConainer) {
-            settingsConainer.replaceChildren(...createBackgroundSettingsUI(state.rendererState, state.debug, stateChange))
+            settingsConainer.replaceChildren(...createSettingsUI(state, stateChange))
         }
     }
     const renderLoop = (t: number) => {
-        requestAnimationFrame(renderLoop)
-        const nextQueue = rendererUpdateQueue.pop()
+        const nextQueue = stateUpdateQueue.pop()
         if (nextQueue) {
             stateChange(nextQueue)
         }
         resize(glRenderer[0])
-        state.rendererState.activeScene.draw(t)
+        resize(textRenderer[0])
+        state.backgroundRendererState.activeRenderer.activeScene.scene.draw(t)
+        state.textRendererState.activeRenderer.activeScene.scene.draw(t)
+        requestAnimationFrame(renderLoop)
     }
-    settingsConainer?.replaceChildren(...createBackgroundSettingsUI(state.rendererState, state.debug, stateChange))
+    settingsConainer?.replaceChildren(...createSettingsUI(state, stateChange))
+    document.body.appendChild(glContext[0])
+    document.body.appendChild(textContext[0])
+    const renderers = document.querySelectorAll(".renderer")
     if (uiHider) {
+        renderers.forEach((renderer) => {
+            if (renderer instanceof HTMLElement) {
+                addShowUIFunctionality(renderer, () => {uiHider.hidden = false})
+            }
+        })
         document.getElementById("ui-close")?.addEventListener("click", () => {
             uiHider.hidden = true
         })
     }
-    document.body.appendChild(glContext[0])
     renderLoop(performance.now())
 }
 
@@ -114,7 +155,7 @@ async function init(): Promise<void> {
  * @param canvas The canvas to attach the event listeners to
  * @param showUI What to do when the UI is to be shown
  */
-function addShowUIFunctionality(canvas: HTMLCanvasElement, showUI: () => void) {
+function addShowUIFunctionality(canvas: HTMLElement, showUI: () => void) {
     if (navigator.maxTouchPoints > 0) {
         let start: Touch | null
         canvas.addEventListener("touchstart", (event) => {
@@ -171,17 +212,28 @@ function resize(renderer: Renderer) {
  * The top-level state of the application
  */
 export interface AppState {
-    activeUI: "renderer"
-    rendererState: RendererState
+    activeUI: Layer
+    backgroundRendererState: RenderingState
+    //imageRendererState: RendererState
+    textRendererState: RenderingState
     uiVisible: boolean
     debug: boolean
 }
 
-export interface RendererState {
-    availableRenderers: Map<string, Renderer>
-    activeRenderer: Renderer
-    activeScene: Scene
+export interface RenderingState {
+    availableRenderers: Map<string, RendererState>
+    activeRenderer: RendererState
 }
+export interface RendererState {
+    readonly renderer: Renderer
+    readonly statefulScenes: Map<number, SceneState>
+    activeScene: SceneState
+}
+export interface SceneState {
+    readonly scene: Scene
+    selectedObject: SceneObject
+}
+
 
 /**
  * Apply state changes to the state
@@ -192,17 +244,113 @@ export interface RendererState {
 function changeState(state: AppState, change: StateChange): AppState {
     switch (change.type) {
         case "renderer": {
-            state.rendererState.activeRenderer = change.newRenderer
-            // todo
+            switch (change.layer) {
+                case "background": {
+                    const newRenderer = state.backgroundRendererState.availableRenderers.get(change.newRenderer)
+                    if (typeof newRenderer === "undefined") {
+                        throw new Error(`Could not find new renderer in available renderers. Requested: ${change.newRenderer}`)
+                    }
+                    state.backgroundRendererState.activeRenderer = newRenderer
+                    break
+                }
+                case "text": {
+                    const newRenderer = state.textRendererState.availableRenderers.get(change.newRenderer)
+                    if (typeof newRenderer === "undefined") {
+                        throw new Error(`Could not find new renderer in available renderers. Requested: ${change.newRenderer}`)
+                    }
+                    state.textRendererState.activeRenderer = newRenderer
+                    break
+                }
+            }
             return state
         }
         case "scene": {
-            state.rendererState.activeScene = change.newScene
+            switch (change.layer) {
+                case "background": {
+                    const newScene = state.backgroundRendererState.activeRenderer.statefulScenes.get(change.newScene)
+                    if (typeof newScene === "undefined") {
+                        const statelessScene = state.backgroundRendererState.activeRenderer.renderer.getScenes().get(change.newScene)
+                        if (typeof statelessScene === "undefined") {throw new Error(`Could not find new scene in available scenes. Requested: ${change.newScene}`)}
+                        const newStatefulScene: SceneState = {
+                            scene: statelessScene,
+                            selectedObject: statelessScene.getObjects()[0]
+                        }
+                        state.backgroundRendererState.activeRenderer.statefulScenes.set(change.newScene, newStatefulScene)
+                        state.backgroundRendererState.activeRenderer.activeScene = newStatefulScene
+                    }
+                    else {
+                        state.backgroundRendererState.activeRenderer.activeScene = newScene
+                    }
+                    break
+                }
+                case "text": {
+                    const newScene = state.textRendererState.activeRenderer.statefulScenes.get(change.newScene)
+                    if (typeof newScene === "undefined") {
+                        const statelessScene = state.textRendererState.activeRenderer.renderer.getScenes().get(change.newScene)
+                        if (typeof statelessScene === "undefined") {throw new Error(`Could not find new scene in available scenes. Requested: ${change.newScene}`)}
+                        const newStatefulScene: SceneState = {
+                            scene: statelessScene,
+                            selectedObject: statelessScene.getObjects()[0]
+                        }
+                        state.textRendererState.activeRenderer.statefulScenes.set(change.newScene, newStatefulScene)
+                        state.textRendererState.activeRenderer.activeScene = newStatefulScene
+                    }
+                    else {
+                        state.textRendererState.activeRenderer.activeScene = newScene
+                    }
+                    break
+                }
+            }
+            return state
+        }
+        case "object": {
+            switch (change.layer) {
+                case "background": {
+                    state.backgroundRendererState.activeRenderer.activeScene.selectedObject = change.newObject
+                    break
+                }
+                case "text": {
+                    state.textRendererState.activeRenderer.activeScene.selectedObject = change.newObject
+                    break
+                }
+            }
             return state
         }
         case "sceneAdded": {
             return state
         }
+        case "objectUpdate": {
+            return state
+        }
+        case "layer": {
+            state.activeUI = change.layer
+            return state
+        }
+    }
+}
+
+function buildRenderingState(availableRenderers: Map<string, Renderer>, renderer: Renderer, scene: Scene, object: SceneObject): RenderingState {
+    const statefulRenderersArray: [string, RendererState][] = []
+    const initScene: SceneState = {
+        scene: scene,
+        selectedObject: object
+    }
+    const initSceneMap = new Map<number, SceneState>([[scene.id, initScene]])
+
+    availableRenderers.forEach((val, key) => {
+        statefulRenderersArray.push([key, {
+            renderer: val,
+            statefulScenes: initSceneMap,
+            activeScene: {
+                scene: scene,
+                selectedObject: object
+            }
+        }])
+    })
+    const initialRenderer = statefulRenderersArray[0][1]
+    return {
+        availableRenderers: new Map(statefulRenderersArray),
+        activeRenderer: initialRenderer
     }
 }
 
@@ -211,12 +359,23 @@ function changeState(state: AppState, change: StateChange): AppState {
  */
 export type StateChange = { 
     type: "renderer"
-    newRenderer: Renderer
+    layer: Layer
+    newRenderer: string
 }
 | { type: "scene"
-    newScene: Scene
+    layer: Layer
+    newScene: number
+}
+| { type: "object"
+    layer: Layer
+    newObject: SceneObject
+}
+| { type: "layer"
+    layer: Layer
 }
 | { type: "sceneAdded"
+}
+| { type: "objectUpdate"
 }
 
 
@@ -231,5 +390,5 @@ async function registerServiceWorker() {
     }
 }
 
-registerServiceWorker()
+//registerServiceWorker()
 init()

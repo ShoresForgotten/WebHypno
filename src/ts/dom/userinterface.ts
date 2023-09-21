@@ -1,6 +1,6 @@
 import { Color, colorEqual, colorToString, stringToColor } from "./color.js"
-import { UserSetting, ColorSetting, NumberSetting, Renderer, Scene } from "./graphics.js"
-import { AppState, RendererState, StateChange } from "./main.js"
+import { UserSetting, ColorSetting, NumberSetting, Renderer, Scene, ButtonSetting, DropdownSetting, StringSetting, SceneObject, Layer } from "./graphics.js"
+import { AppState, RendererState, RenderingState, StateChange } from "./main.js"
 
 interface UIState {
     createUI(renderer: Renderer, scene: Scene): HTMLDivElement
@@ -22,7 +22,7 @@ function generateSettingsWidget(setting: UserSetting): HTMLElement {
             return generateColorInputWidget(setting)
         }
         case "multi": {
-            let element = document.createElement("div")
+            const element = document.createElement("div")
             element.classList.add("multi-setting")
             element.classList.add("setting")
             element.classList.add("setting-toplevel")
@@ -33,6 +33,15 @@ function generateSettingsWidget(setting: UserSetting): HTMLElement {
             })
             return element
         }
+        case "button": {
+            return generateButtonInputWidget(setting)
+        }
+        case "dropdown": {
+            return generateDropdownInputWidget(setting)
+        }
+        case "string": {
+            return generateStringInputWidget(setting)
+        }
     }
 }
 
@@ -42,11 +51,11 @@ function generateSettingsWidget(setting: UserSetting): HTMLElement {
  * @returns An Input elment of type number
  */
 function generateNumberInputWidget(setting: NumberSetting): HTMLDivElement {
-    let element = document.createElement("div")
-    let title = document.createElement("p")
+    const element = document.createElement("div")
+    const title = document.createElement("p")
     title.textContent = setting.name
     title.classList.add("setting-name")
-    let input = document.createElement("input")
+    const input = document.createElement("input")
     input.type = "number"
     input.placeholder = setting.name
     if (setting.min != null) input.min = setting.min.toString()
@@ -74,11 +83,11 @@ function generateNumberInputWidget(setting: NumberSetting): HTMLDivElement {
  * @returns Either an input element of type color or an input element of type text
  */
 function generateColorInputWidget(setting: ColorSetting): HTMLDivElement {
-    let element = document.createElement("div")
-    let title = document.createElement("p")
+    const element = document.createElement("div")
+    const title = document.createElement("p")
     title.textContent = setting.name
     title.classList.add("setting-name")
-    let input = document.createElement("input")
+    const input = document.createElement("input")
     if (navigator.userAgent.includes("Firefox") && navigator.userAgent.includes("Android")) { // Firefox android doesn't fully support color input widgets
         input.type = "text"
         input.placeholder = setting.name
@@ -107,17 +116,121 @@ function generateColorInputWidget(setting: ColorSetting): HTMLDivElement {
     return element
 }
 
+function generateButtonInputWidget(setting: ButtonSetting): HTMLDivElement {
+    const element = document.createElement("div")
+    const button = document.createElement("button")
+    button.textContent = setting.name
+    button.addEventListener("click", () => {
+        setting.push()
+    })
+    element.appendChild(button)
+    element.classList.add("setting")
+    element.classList.add("button-setting")
+    element.classList.add("setting-toplevel")
+    return element
+}
+
+function generateDropdownInputWidget(setting: DropdownSetting): HTMLDivElement {
+    const element = document.createElement("div")
+    const title = document.createElement("p")
+    title.textContent = setting.name
+    title.classList.add("setting-name")
+    const select = document.createElement("select")
+    setting.options.forEach((item) => {
+        const elem = document.createElement("option")
+        if (item === setting.active) {
+            elem.selected = true
+        }
+        elem.value = item
+        elem.text = item // todo: make this title case
+        select.add(elem)
+    })
+    select.addEventListener("change", (event) => {
+        const input = select.value
+        const callbackReturn = setting.set(input)
+        if (input !== callbackReturn) console.log(`Mismatch in input and returned values\nInput: ${input}\nReturn: ${callbackReturn}`)
+    })
+    element.appendChild(title)
+    element.appendChild(select)
+    element.classList.add("setting")
+    element.classList.add("dropdown-setting")
+    element.classList.add("setting-toplevel")
+    return element
+}
+
+function generateStringInputWidget(setting: StringSetting): HTMLDivElement {
+    const element = document.createElement("div")
+    const title = document.createElement("p")
+    title.textContent = setting.name
+    title.classList.add("setting-name")
+    const input = document.createElement("input")
+    input.type = "text"
+    input.value = setting.value
+    input.addEventListener("change", (event) => {
+        const inputVal = input.value
+        const callbackReturn = setting.set(inputVal)
+        if (inputVal !== callbackReturn) console.log(`Mismatch in input and returned values\nInput: ${input}\nReturn: ${callbackReturn}`)
+    })
+    element.appendChild(title)
+    element.appendChild(input)
+    element.classList.add("setting")
+    element.classList.add("string-setting")
+    element.classList.add("setting-toplevel")
+    return element
+}
+
 /**
  * Create and return a div with input elements for everything to do with the background animation
  * @param state - The app state to create the UI from
  * @param stateChange - What to do on a change in app state
  * @returns A div containing the settings menu
  */
-export function createBackgroundSettingsUI(state: RendererState, debug: boolean, stateChange: (change: StateChange) => void): HTMLElement[] {
-    const renderSelector = createRenderSelector(state.availableRenderers, state.activeRenderer, (renderer) => stateChange({type: "renderer", newRenderer: renderer}))
-    const sceneSelector = createSceneSelector(state.activeRenderer.getScenes(), state.activeScene, debug, (scene) => stateChange({type: "scene", newScene: scene}))
-    const settingsArea = createSceneSettings(state.activeScene.getSettings())
-    return [renderSelector, sceneSelector, settingsArea]
+export function createSettingsUI(state: AppState, stateChange: (change: StateChange) => void): HTMLElement[] {
+    const layerSelector = document.createElement("select")
+    const layerList: Layer[] = ["background", "text"]
+    layerList.forEach((layer) => {
+        const option = document.createElement("option")
+        if (layer === state.activeUI) option.selected = true
+        option.value = layer
+        option.text = layer // todo: make this title case
+        layerSelector.add(option)
+    })
+    layerSelector.addEventListener("change", () => {
+        if (layerSelector.value === "text" || layerSelector.value === "background") {
+            stateChange({type: "layer", layer: layerSelector.value})
+        }
+        else {
+            console.error("i'm so tired")
+        }
+    })
+    switch (state.activeUI) {
+        case "background": {
+            const bgroundState = state.backgroundRendererState
+            const renderSelector = createRenderSelector(Array.from(bgroundState.availableRenderers.keys()), bgroundState.activeRenderer.renderer, (renderer: string) => stateChange({type: "renderer", newRenderer: renderer, layer: state.activeUI}))
+            const sceneSelector = createSceneSelector(bgroundState.activeRenderer.renderer.getScenes(), bgroundState.activeRenderer.activeScene.scene, state.debug, (scene: number) => stateChange({type: "scene", newScene: scene, layer: state.activeUI}))
+            const objects = bgroundState.activeRenderer.activeScene.scene.getObjects()
+            let activeObject = objects.find((obj) => {
+                return obj.id === bgroundState.activeRenderer.activeScene.selectedObject.id
+            })
+            if (typeof activeObject === "undefined") activeObject = objects[0]
+            const objectSelector = createObjectSelector(objects, activeObject, state.debug, (object) => stateChange({type: "object", newObject: object, layer: state.activeUI}))
+            const settingsArea = createObjectSettings(activeObject) // todo: this needs improvement
+            return [layerSelector, renderSelector, sceneSelector, objectSelector, settingsArea]
+        }
+        case "text": {
+            const textState = state.textRendererState
+            const renderSelector = createRenderSelector(Array.from(textState.availableRenderers.keys()), textState.activeRenderer.renderer, (renderer: string) => stateChange({type: "renderer", newRenderer: renderer, layer: state.activeUI}))
+            const sceneSelector = createSceneSelector(textState.activeRenderer.renderer.getScenes(), textState.activeRenderer.activeScene.scene, state.debug, (scene: number) => stateChange({type: "scene", newScene: scene, layer: state.activeUI}))
+            const objects = textState.activeRenderer.activeScene.scene.getObjects()
+            let activeObject = objects.find((obj) => {
+                return obj.id === textState.activeRenderer.activeScene.selectedObject.id
+            })
+            if (typeof activeObject === "undefined") activeObject = objects[0]
+            const objectSelector = createObjectSelector(objects, activeObject, state.debug, (object) => stateChange({type: "object", newObject: object, layer: state.activeUI}))
+            const settingsArea = createObjectSettings(activeObject) // todo: this needs improvement
+            return [layerSelector, renderSelector, sceneSelector, objectSelector, settingsArea]
+        }
+    }
 }
 
 /**
@@ -127,24 +240,17 @@ export function createBackgroundSettingsUI(state: RendererState, debug: boolean,
  * @param onChange - What do do on change
  * @returns A select element
  */
-function createRenderSelector(renderers: Map<string, Renderer>, activeRenderer: Renderer, onChange: (newSelection: Renderer) => void): HTMLSelectElement {
+function createRenderSelector(rendererKeys: string[], activeRenderer: Renderer, onChange: (newSelection: string) => void): HTMLSelectElement {
     const selector = document.createElement("select")
     selector.classList.add("renderer-selector")
-    renderers.forEach((val, key) => {
+    rendererKeys.forEach((val) => {
         const option = document.createElement("option")
-        option.text = key
-        if (val === activeRenderer) {option.defaultSelected = true; option.selected = true}
+        option.text = val
+        if (val === activeRenderer.name) {option.defaultSelected = true; option.selected = true}
         selector.add(option)
     })
     selector.addEventListener("change", ((_event) => {
-        const key = selector.value
-        const val = renderers.get(key)
-        if (typeof val === "undefined") {
-            console.error("Tried to select a renderer which does not exist in the renderer hashmap")
-        }
-        else {
-            onChange(val)
-        }
+        onChange(selector.value)
     }))
     return selector
 }
@@ -156,7 +262,7 @@ function createRenderSelector(renderers: Map<string, Renderer>, activeRenderer: 
  * @param onChange - What do do on change
  * @returns A select element
  */
-function createSceneSelector(scenes: Map<number, Scene>, activeScene: Scene, debug: boolean, onChange: (newSelection: Scene) => void): HTMLSelectElement {
+function createSceneSelector(scenes: Map<number, Scene>, activeScene: Scene, debug: boolean, onChange: (newSelection: number) => void): HTMLSelectElement {
     const selector = document.createElement("select")
     const sortedScenes = Array.from(scenes).sort((a, b) => {return a[0] - b[0]})
     selector.classList.add("scene-selector")
@@ -174,14 +280,41 @@ function createSceneSelector(scenes: Map<number, Scene>, activeScene: Scene, deb
     })
     selector.addEventListener("change", ((_event) => {
         const key = Number.parseInt(selector.value)
-        const scene = scenes.get(key)
-        if (typeof scene === "undefined") {
-            console.error("Tried to select a scene which does not exist in the scene hashmap")
+        onChange(key)
+    }))
+    return selector
+}
+
+function createObjectSelector(objects: SceneObject[], activeObject: SceneObject, debug: boolean, onChange: (newSelection: SceneObject) => void): HTMLSelectElement {
+    const selector = document.createElement("select")
+    selector.classList.add("object-selector")
+    objects.forEach((obj) => {
+        const option = document.createElement("option")
+        if (obj.name === "") {
+            option.text = "<empty>"
         }
         else {
-            onChange(scene)
+            option.text = obj.name
         }
-    }))
+        option.value = obj.id.toString()
+        if (obj.id === activeObject.id) {
+            option.selected = true
+        }
+        selector.add(option)
+    })
+    selector.addEventListener("change", (event) => {
+        const key = Number.parseInt(selector.value)
+        const objects2 = objects.filter((x) => {
+            if (x.id === key) { return true }
+            else { return false }
+        })
+        if (objects2.length === 1) {
+            onChange(objects2[0])
+        }
+        else {
+            console.error("Matching list of objects was not of length 1")
+        }
+    })
     return selector
 }
 
@@ -198,6 +331,16 @@ function createSceneSettings(settings: Map<string, UserSetting[]>): HTMLDivEleme
         let element = generateSettingsWidget(setting)
         div.appendChild(element)
         })
+    })
+    return div
+}
+
+function createObjectSettings(object: SceneObject): HTMLDivElement {
+    const div = document.createElement("div")
+    div.classList.add("object-settings")
+    object.settings.forEach((obj) => {
+        const element = generateSettingsWidget(obj)
+        div.appendChild(element)
     })
     return div
 }

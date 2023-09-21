@@ -1,8 +1,7 @@
 import { Color } from "./color.js"
-import { StateChange } from "./main.js"
-import { createRenderer as createGLRenderer }  from "./webgl/state.js"
 
-export type UserSetting = NumberSetting | ColorSetting | MultiSetting
+export type Layer = "background" | "text"
+export type UserSetting = NumberSetting | ColorSetting | MultiSetting | ButtonSetting | StringSetting | DropdownSetting
 
 /**
  * A setting with a value that is a number, including both ints and floats
@@ -43,6 +42,27 @@ export interface ColorSetting {
     readonly value: Color
 }
 
+export interface ButtonSetting {
+    readonly type: "button"
+    readonly name: string
+    readonly push: () => void
+}
+
+export interface StringSetting {
+    readonly type: "string"
+    readonly name: string
+    readonly value: string
+    readonly set: (input: string) => string
+}
+
+export interface DropdownSetting {
+    readonly type: "dropdown"
+    readonly name: string
+    readonly options: string[]
+    readonly active: string
+    readonly set: (input: string) => string
+}
+
 /**
  * Multiple settings that have some kind of logical grouping to be displayed to the user
  */
@@ -54,10 +74,12 @@ export interface MultiSetting {
     readonly settings: UserSetting[]
 }
 
+
 /**
  * A renderer that draws scenes to a canvas
  */
 export interface Renderer {
+    readonly name: string
     /**
      * Get the scenes that a given renderer has loaded
      * @returns A map where the keys are scene ids and the values are scene objects
@@ -96,25 +118,20 @@ export interface Scene {
      * Get the settings that a user can set for this scene
      * @returns A map containing the settings. The key is the object that the settings apply to, while the array contains the settings themselves
      */
-    readonly getSettings: () => Map<string, UserSetting[]>
+    //readonly getSettings: () => Map<string, UserSetting[]>
+    readonly getObjects: () => SceneObject[]
     readonly draw: (t: number) => void
+    readonly id: number
 }
 
+export interface SceneObject {
+    readonly name: string
+    readonly id: number
+    readonly settings: UserSetting[]
+}
 /**
  * An index of scenes and where to get the information to build them
  */
 export interface Index {
     readonly webgl: Map<number, string>
-}
-
-/**
- * Create a renderer
- * @param type - What kind of renderer to create (currently only webgl is available)
- * @param init - The scene to create and use first
- * @param ctx - The webgl context to use
- * @param index - The index of scenes and scene information files to use to create scenes
- * @returns A tuple containing the renderer and the initial scene (...eventually)
- */
-export async function initRenderer(type: "webgl", init: number, ctx: WebGLRenderingContext, index: Map<number, string>, update: (change: StateChange) => void): Promise<[Renderer, Scene]> {
-        return createGLRenderer(ctx, init, index, update)
 }
