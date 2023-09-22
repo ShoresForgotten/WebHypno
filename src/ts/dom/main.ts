@@ -1,3 +1,4 @@
+import { createImageRenderer } from "./2d/image.js"
 import { createTextRenderer } from "./2d/text.js"
 import { Index, Layer, Renderer, Scene, SceneObject } from "./graphics.js"
 import { createSettingsUI } from "./userinterface.js"
@@ -65,6 +66,7 @@ function create2DContext(): [HTMLCanvasElement, CanvasRenderingContext2D] | null
  * Entry point
  */
 async function init(): Promise<void> {
+    // Content warning
     const warning = document.getElementById("warning")
     const skip = localStorage.getItem("skipWarning")
     if (!(skip && skip === "true") && warning) {
@@ -78,6 +80,7 @@ async function init(): Promise<void> {
         })
     }
 
+    // WebGL
     const indexLocation = "/shaders/index.json"
     const indexPromise = getIndex(indexLocation)
     const uiHider = document.getElementById("ui-hider")
@@ -95,9 +98,11 @@ async function init(): Promise<void> {
     else {
         throw new Error("fuck")
     }
+
+    // Text
     const textContext = create2DContext()
     let textRenderer: [Renderer, Scene]
-    if (textContext != null) {
+    if (textContext !== null) {
         textContext[0].id = "text-2d-renderer"
         textContext[0].classList.add("renderer")
         textContext[0].classList.add("text-renderer")
@@ -106,13 +111,31 @@ async function init(): Promise<void> {
     else {
         throw new Error("shit")
     }
+    
+    // Images
+    const imageContext = create2DContext()
+    let imageRenderer: [Renderer, Scene]
+    if (imageContext !== null) {
+        imageContext[0].id = "image-2d-renderer"
+        imageContext[0].classList.add("renderer")
+        imageContext[0].classList.add("image-renderer")
+        imageRenderer = createImageRenderer(imageContext[1], (stateChange) => {stateUpdateQueue.push(stateChange)})
+    }
+    else {
+        throw new Error("cunt")
+    }
+
+    // State
     const state: AppState = {
         activeUI: "background",
         backgroundRendererState: buildRenderingState(availableBackgroundRenderers, glRenderer[0], glRenderer[1], glRenderer[1].getObjects()[0]),
+        imageRendererState: buildRenderingState((new Map<string, Renderer>([["image", imageRenderer[0]]])), imageRenderer[0], imageRenderer[1], imageRenderer[1].getObjects()[0]),
         textRendererState: buildRenderingState((new Map<string, Renderer>([["text", textRenderer[0]]])), textRenderer[0], textRenderer[1], textRenderer[1].getObjects()[0]),
         uiVisible: false,
         debug: true
     }
+
+    // UI
     const settingsConainer = document.getElementById("ui")
     const stateChange = (change: StateChange) => {
         changeState(state, change)
@@ -120,20 +143,25 @@ async function init(): Promise<void> {
             settingsConainer.replaceChildren(...createSettingsUI(state, stateChange))
         }
     }
+
+    // Main loop
     const renderLoop = (t: number) => {
         const nextQueue = stateUpdateQueue.pop()
         if (nextQueue) {
             stateChange(nextQueue)
         }
         resize(glRenderer[0])
+        resize(imageRenderer[0])
         resize(textRenderer[0])
         state.backgroundRendererState.activeRenderer.activeScene.scene.draw(t)
+        state.imageRendererState.activeRenderer.activeScene.scene.draw(t)
         state.textRendererState.activeRenderer.activeScene.scene.draw(t)
         requestAnimationFrame(renderLoop)
     }
     settingsConainer?.replaceChildren(...createSettingsUI(state, stateChange))
     document.body.appendChild(glContext[0])
     document.body.appendChild(textContext[0])
+    document.body.appendChild(imageContext[0])
     const renderers = document.querySelectorAll(".renderer")
     if (uiHider) {
         renderers.forEach((renderer) => {
@@ -214,7 +242,7 @@ function resize(renderer: Renderer) {
 export interface AppState {
     activeUI: Layer
     backgroundRendererState: RenderingState
-    //imageRendererState: RendererState
+    imageRendererState: RenderingState
     textRendererState: RenderingState
     uiVisible: boolean
     debug: boolean

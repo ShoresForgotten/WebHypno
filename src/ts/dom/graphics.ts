@@ -1,7 +1,7 @@
 import { Color } from "./color.js"
 
-export type Layer = "background" | "text"
-export type UserSetting = NumberSetting | ColorSetting | MultiSetting | ButtonSetting | StringSetting | DropdownSetting
+export type Layer = "background" | "text" | "image"
+export type UserSetting = NumberSetting | ColorSetting | MultiSetting | ButtonSetting | StringSetting | DropdownSetting | FileSetting |ImagePreview
 
 /**
  * A setting with a value that is a number, including both ints and floats
@@ -61,6 +61,21 @@ export interface DropdownSetting {
     readonly options: string[]
     readonly active: string
     readonly set: (input: string) => string
+}
+
+export interface FileSetting {
+    readonly type: "file"
+    readonly name: string
+    readonly path: string
+    readonly accept: string[]
+    readonly multiple: boolean
+    readonly set: (files: FileList) => void
+}
+
+export interface ImagePreview {
+    readonly type: "imagePreview"
+    readonly name: string
+    readonly elem?: HTMLImageElement
 }
 
 /**

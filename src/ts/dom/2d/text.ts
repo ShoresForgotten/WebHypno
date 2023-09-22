@@ -10,6 +10,7 @@ interface TextObject {
     font: FontInfo
     style: "fill" | "stroke"
     color: Color
+    alpha: number
 }
 
 interface FontInfo {
@@ -39,6 +40,7 @@ function drawText(ctx: CanvasRenderingContext2D, obj: TextObject): void {
     ctx.scale(obj.scale.x, obj.scale.y)
     ctx.rotate(obj.rotation * Math.PI / 180)
     ctx.font = useFontSize + " " + obj.font.fontFamily
+    ctx.globalAlpha = obj.alpha
     if (obj.style === "fill") {
         ctx.fillStyle = '#' + colorToString(obj.color)
         ctx.fillText(obj.content, 0, 0)
@@ -62,7 +64,10 @@ function textObjectSettings(obj: TextObject, textChange: () => void): UserSettin
         {type: "number", name: "Horizontal offset", set: (input) => {obj.offset.x = input; return obj.offset.x}, whole: false, value: obj.offset.x},
         {type: "number", name: "Vertical offset", set: (input) => {obj.offset.y = input; return obj.offset.y}, whole: false, value: obj.offset.y}
         ]})
-    settings.push({type: "color", name: "Color", value: obj.color, set: (input) => {obj.color = input; return obj.color}})
+    settings.push({type: "multi", name: "Color", settings: [
+        {type: "color", name: "Color", value: obj.color, set: (input) => {obj.color = input; return obj.color}},
+        {type: "number", name: "Opacity", value: obj.alpha, set: (input) => {obj.alpha = input; return obj.alpha}, whole: false, min: 0, max: 1}
+        ]})
     settings.push({type: "dropdown", name: "Fill style", active: obj.style, options: ["fill", "stroke"], set: (input) => {
         if (input === "fill" || input === "stroke") {
             obj.style = input
@@ -86,11 +91,11 @@ interface TimedText {
 
 function timedTextSettings(obj: TimedText, textChange: () => void): UserSetting[] {
     const settings: UserSetting[] = textObjectSettings(obj.content, textChange)
-    const fontSetting = settings.pop()
-    settings.push({type: "number", name: "Active time", value: obj.active, set: (input) => {obj.active = input; return obj.active}, whole: false})
-    settings.push({type: "number", name: "Inactive time", value: obj.inactive, set: (input) => {obj.inactive = input; return obj.inactive}, whole: false})
-    settings.push({type: "number", name: "Time offset", value: obj.tOffset, set: (input) => {obj.tOffset = input; return obj.tOffset}, whole: false})
-    if (fontSetting) settings.push(fontSetting)
+    const newSettings: UserSetting[] = []
+    newSettings.push({type: "number", name: "Active time", value: obj.active, set: (input) => {obj.active = input; return obj.active}, whole: false})
+    newSettings.push({type: "number", name: "Inactive time", value: obj.inactive, set: (input) => {obj.inactive = input; return obj.inactive}, whole: false})
+    newSettings.push({type: "number", name: "Time offset", value: obj.tOffset, set: (input) => {obj.tOffset = input; return obj.tOffset}, whole: false})
+    settings.splice(-2, 0, ...newSettings)
     return settings
 }
 
@@ -106,7 +111,8 @@ function createBlankText(): TimedText {
                 fontFamily: "sans-serif"
             },
             style: "fill",
-            color: {red: 0, green: 0, blue: 0}
+            color: {red: 0, green: 0, blue: 0},
+            alpha: 1
         },
         active: 1,
         inactive: 0,

@@ -1,5 +1,5 @@
 import { Color, colorEqual, colorToString, stringToColor } from "./color.js"
-import { UserSetting, ColorSetting, NumberSetting, Renderer, Scene, ButtonSetting, DropdownSetting, StringSetting, SceneObject, Layer } from "./graphics.js"
+import { UserSetting, ColorSetting, NumberSetting, Renderer, Scene, ButtonSetting, DropdownSetting, StringSetting, SceneObject, Layer, FileSetting, ImagePreview } from "./graphics.js"
 import { AppState, RendererState, RenderingState, StateChange } from "./main.js"
 
 interface UIState {
@@ -41,6 +41,12 @@ function generateSettingsWidget(setting: UserSetting): HTMLElement {
         }
         case "string": {
             return generateStringInputWidget(setting)
+        }
+        case "file": {
+            return generateFileInputWidget(setting)
+        }
+        case "imagePreview": {
+            return generateImagePreviewWidget(setting)
         }
     }
 }
@@ -179,6 +185,45 @@ function generateStringInputWidget(setting: StringSetting): HTMLDivElement {
     return element
 }
 
+function generateFileInputWidget(setting: FileSetting): HTMLDivElement {
+    const element = document.createElement("div")
+    const title = document.createElement("p")
+    title.textContent = setting.name
+    title.classList.add("setting-name")
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept = setting.accept.toString()
+    input.multiple = setting.multiple
+    if (setting.path !== "") input.value = setting.path
+    input.addEventListener("change", (event) => {
+        const inputVal = input.files
+        if (inputVal) {
+            setting.set(inputVal)
+        }
+    })
+    element.appendChild(title)
+    element.append(input)
+    element.classList.add("setting")
+    element.classList.add("file-setting")
+    element.classList.add("setting-toplevel")
+    return element
+}
+
+function generateImagePreviewWidget(setting: ImagePreview): HTMLDivElement {
+    const element = document.createElement("div")
+    const title = document.createElement("p")
+    title.textContent = setting.name
+    title.classList.add("setting-name")
+    element.appendChild(title)
+    if (setting.elem) {
+        element.append(setting.elem)
+    }
+    element.classList.add("setting")
+    element.classList.add("image-preview")
+    element.classList.add("setting-toplevel")
+    return element
+}
+
 /**
  * Create and return a div with input elements for everything to do with the background animation
  * @param state - The app state to create the UI from
@@ -187,7 +232,8 @@ function generateStringInputWidget(setting: StringSetting): HTMLDivElement {
  */
 export function createSettingsUI(state: AppState, stateChange: (change: StateChange) => void): HTMLElement[] {
     const layerSelector = document.createElement("select")
-    const layerList: Layer[] = ["background", "text"]
+    layerSelector.classList.add("ui-mode-selector")
+    const layerList: Layer[] = ["background", "text", "image"]
     layerList.forEach((layer) => {
         const option = document.createElement("option")
         if (layer === state.activeUI) option.selected = true
@@ -196,7 +242,7 @@ export function createSettingsUI(state: AppState, stateChange: (change: StateCha
         layerSelector.add(option)
     })
     layerSelector.addEventListener("change", () => {
-        if (layerSelector.value === "text" || layerSelector.value === "background") {
+        if (layerSelector.value === "text" || layerSelector.value === "background" || layerSelector.value == "image") {
             stateChange({type: "layer", layer: layerSelector.value})
         }
         else {
@@ -224,6 +270,19 @@ export function createSettingsUI(state: AppState, stateChange: (change: StateCha
             const objects = textState.activeRenderer.activeScene.scene.getObjects()
             let activeObject = objects.find((obj) => {
                 return obj.id === textState.activeRenderer.activeScene.selectedObject.id
+            })
+            if (typeof activeObject === "undefined") activeObject = objects[0]
+            const objectSelector = createObjectSelector(objects, activeObject, state.debug, (object) => stateChange({type: "object", newObject: object, layer: state.activeUI}))
+            const settingsArea = createObjectSettings(activeObject) // todo: this needs improvement
+            return [layerSelector, renderSelector, sceneSelector, objectSelector, settingsArea]
+        }
+        case "image": {
+            const imageState = state.imageRendererState
+            const renderSelector = createRenderSelector(Array.from(imageState.availableRenderers.keys()), imageState.activeRenderer.renderer, (renderer: string) => stateChange({type: "renderer", newRenderer: renderer, layer: state.activeUI}))
+            const sceneSelector = createSceneSelector(imageState.activeRenderer.renderer.getScenes(), imageState.activeRenderer.activeScene.scene, state.debug, (scene: number) => stateChange({type: "scene", newScene: scene, layer: state.activeUI}))
+            const objects = imageState.activeRenderer.activeScene.scene.getObjects()
+            let activeObject = objects.find((obj) => {
+                return obj.id === imageState.activeRenderer.activeScene.selectedObject.id
             })
             if (typeof activeObject === "undefined") activeObject = objects[0]
             const objectSelector = createObjectSelector(objects, activeObject, state.debug, (object) => stateChange({type: "object", newObject: object, layer: state.activeUI}))
