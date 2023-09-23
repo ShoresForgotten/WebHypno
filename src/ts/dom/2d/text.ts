@@ -168,7 +168,7 @@ export function createTextRenderer(ctx: CanvasRenderingContext2D, stateUpdate: (
     const scene = createTextScene(ctx, "default", false, stateUpdate)
     const sceneMap = new Map<number, Scene>([[0, scene]])
     const renderer: Renderer = {
-        name: "Text",
+        name: "Canvas2D",
         getScenes: () => {
             return sceneMap
         },

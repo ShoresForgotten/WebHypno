@@ -289,6 +289,14 @@ function changeState(state: AppState, change: StateChange): AppState {
                     state.textRendererState.activeRenderer = newRenderer
                     break
                 }
+                case "image": {
+                    const newRenderer = state.imageRendererState.availableRenderers.get(change.newRenderer)
+                    if (typeof newRenderer === "undefined") {
+                        throw new Error(`Could not find new renderer in available renderers. Requested: ${change.newRenderer}`)
+                    }
+                    state.imageRendererState.activeRenderer = newRenderer
+                    break
+                }
             }
             return state
         }
@@ -328,6 +336,23 @@ function changeState(state: AppState, change: StateChange): AppState {
                     }
                     break
                 }
+                case "image": {
+                    const newScene = state.imageRendererState.activeRenderer.statefulScenes.get(change.newScene)
+                    if (typeof newScene === "undefined") {
+                        const statelessScene = state.imageRendererState.activeRenderer.renderer.getScenes().get(change.newScene)
+                        if (typeof statelessScene === "undefined") {throw new Error(`Could not find new scene in available scenes. Requested: ${change.newScene}`)}
+                        const newStatefulScene: SceneState = {
+                            scene: statelessScene,
+                            selectedObject: statelessScene.getObjects()[0]
+                        }
+                        state.imageRendererState.activeRenderer.statefulScenes.set(change.newScene, newStatefulScene)
+                        state.imageRendererState.activeRenderer.activeScene = newStatefulScene
+                    }
+                    else {
+                        state.imageRendererState.activeRenderer.activeScene = newScene
+                    }
+                    break
+                }
             }
             return state
         }
@@ -339,6 +364,10 @@ function changeState(state: AppState, change: StateChange): AppState {
                 }
                 case "text": {
                     state.textRendererState.activeRenderer.activeScene.selectedObject = change.newObject
+                    break
+                }
+                case "image": {
+                    state.imageRendererState.activeRenderer.activeScene.selectedObject = change.newObject
                     break
                 }
             }
@@ -418,5 +447,5 @@ async function registerServiceWorker() {
     }
 }
 
-//registerServiceWorker()
+registerServiceWorker()
 init()

@@ -10,6 +10,7 @@ const SOURCE_FILES = [
     "/js/webgl/rendering.js",
     "/js/webgl/state.js",
     "/js/2d/text.js",
+    "/js/2d/image.js"
 ]
 
 async function addResourcesToCache(resources: string[]) {

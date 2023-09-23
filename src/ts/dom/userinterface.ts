@@ -252,7 +252,7 @@ export function createSettingsUI(state: AppState, stateChange: (change: StateCha
     switch (state.activeUI) {
         case "background": {
             const bgroundState = state.backgroundRendererState
-            const renderSelector = createRenderSelector(Array.from(bgroundState.availableRenderers.keys()), bgroundState.activeRenderer.renderer, (renderer: string) => stateChange({type: "renderer", newRenderer: renderer, layer: state.activeUI}))
+            const renderSelector = createRenderSelector(Array.from(bgroundState.availableRenderers.values()), bgroundState.activeRenderer.renderer, (renderer: string) => stateChange({type: "renderer", newRenderer: renderer, layer: state.activeUI}))
             const sceneSelector = createSceneSelector(bgroundState.activeRenderer.renderer.getScenes(), bgroundState.activeRenderer.activeScene.scene, state.debug, (scene: number) => stateChange({type: "scene", newScene: scene, layer: state.activeUI}))
             const objects = bgroundState.activeRenderer.activeScene.scene.getObjects()
             let activeObject = objects.find((obj) => {
@@ -265,7 +265,7 @@ export function createSettingsUI(state: AppState, stateChange: (change: StateCha
         }
         case "text": {
             const textState = state.textRendererState
-            const renderSelector = createRenderSelector(Array.from(textState.availableRenderers.keys()), textState.activeRenderer.renderer, (renderer: string) => stateChange({type: "renderer", newRenderer: renderer, layer: state.activeUI}))
+            const renderSelector = createRenderSelector(Array.from(textState.availableRenderers.values()), textState.activeRenderer.renderer, (renderer: string) => stateChange({type: "renderer", newRenderer: renderer, layer: state.activeUI}))
             const sceneSelector = createSceneSelector(textState.activeRenderer.renderer.getScenes(), textState.activeRenderer.activeScene.scene, state.debug, (scene: number) => stateChange({type: "scene", newScene: scene, layer: state.activeUI}))
             const objects = textState.activeRenderer.activeScene.scene.getObjects()
             let activeObject = objects.find((obj) => {
@@ -278,7 +278,7 @@ export function createSettingsUI(state: AppState, stateChange: (change: StateCha
         }
         case "image": {
             const imageState = state.imageRendererState
-            const renderSelector = createRenderSelector(Array.from(imageState.availableRenderers.keys()), imageState.activeRenderer.renderer, (renderer: string) => stateChange({type: "renderer", newRenderer: renderer, layer: state.activeUI}))
+            const renderSelector = createRenderSelector(Array.from(imageState.availableRenderers.values()), imageState.activeRenderer.renderer, (renderer: string) => stateChange({type: "renderer", newRenderer: renderer, layer: state.activeUI}))
             const sceneSelector = createSceneSelector(imageState.activeRenderer.renderer.getScenes(), imageState.activeRenderer.activeScene.scene, state.debug, (scene: number) => stateChange({type: "scene", newScene: scene, layer: state.activeUI}))
             const objects = imageState.activeRenderer.activeScene.scene.getObjects()
             let activeObject = objects.find((obj) => {
@@ -299,13 +299,14 @@ export function createSettingsUI(state: AppState, stateChange: (change: StateCha
  * @param onChange - What do do on change
  * @returns A select element
  */
-function createRenderSelector(rendererKeys: string[], activeRenderer: Renderer, onChange: (newSelection: string) => void): HTMLSelectElement {
+function createRenderSelector(rendererKeys: RendererState[], activeRenderer: Renderer, onChange: (newSelection: string) => void): HTMLSelectElement {
     const selector = document.createElement("select")
     selector.classList.add("renderer-selector")
     rendererKeys.forEach((val) => {
         const option = document.createElement("option")
-        option.text = val
-        if (val === activeRenderer.name) {option.defaultSelected = true; option.selected = true}
+        option.text = val.renderer.name
+        option.value = val.renderer.name
+        if (val.renderer.name === activeRenderer.name) {option.defaultSelected = true; option.selected = true}
         selector.add(option)
     })
     selector.addEventListener("change", ((_event) => {
