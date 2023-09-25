@@ -51,7 +51,7 @@ function imageObjectSettings(obj: ImageObject, change: () => void): UserSetting[
                 {type: "file", name: "File", path: obj.path, multiple: false, accept: ["image/jpeg", "image/png", "image/svg+xml", "image/webp"],
                     set: (input) => {
                         if (input.length >= 1) {
-                            obj.content = processImage(input[0])
+                            processImage(input[0]).then((image) => obj.content = image)
                         }
                         change()
                     }
@@ -199,12 +199,16 @@ export function createImageRenderer(ctx: CanvasRenderingContext2D, stateUpdate: 
 /**
  * Turn a file into an image element
  * @param file - A file that can be a source for an image
- * @returns An image element
+ * @returns An promise for image element
  */
-function processImage(file: File): HTMLImageElement {
+function processImage(file: File): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
     const src = URL.createObjectURL(file)
     const image = new Image()
+    image.addEventListener("load", () => {
+        URL.revokeObjectURL(src)
+        resolve(image)
+    })
     image.src = src
-    URL.revokeObjectURL(src)
-    return image
+    })
 }
