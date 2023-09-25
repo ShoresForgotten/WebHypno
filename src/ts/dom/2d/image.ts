@@ -1,6 +1,9 @@
 import { Renderer, Scene, SceneObject, UserSetting } from "../graphics.js";
 import { StateChange } from "../main.js";
 
+/**
+ * The settings of an image object
+ */
 interface ImageObject {
     content?: HTMLImageElement,
     name: string
@@ -11,6 +14,11 @@ interface ImageObject {
     alpha: number
 }
 
+/**
+ * Draw an image object to the canvas
+ * @param ctx - The context to draw to
+ * @param obj - The object to draw
+ */
 function drawImage(ctx: CanvasRenderingContext2D, obj: ImageObject): void {
     if (obj.content) {
         ctx.save()
@@ -30,6 +38,12 @@ function drawImage(ctx: CanvasRenderingContext2D, obj: ImageObject): void {
     }
 }
 
+/**
+ * Get the settings objects for a given image object
+ * @param obj - The object in question to generate the settings objects for
+ * @param change - What to do if something gets changed and the state needs to be updated
+ * @returns A list of setting objects
+ */
 function imageObjectSettings(obj: ImageObject, change: () => void): UserSetting[] {
     const settings: UserSetting[] = []
     settings.push({type: "string", name: "Name", value: obj.name, set: (input) => {obj.name = input; change(); return obj.name}})
@@ -57,6 +71,9 @@ function imageObjectSettings(obj: ImageObject, change: () => void): UserSetting[
     return settings
 }
 
+/**
+ * An image that can appear and dissapear with time
+ */
 interface TimedImage {
     content: ImageObject
     active: number // Amount of time that the image displays (in seconds)
@@ -64,6 +81,12 @@ interface TimedImage {
     tOffset: number // Offset from start time
 }
 
+/**
+ * Generate the settings for a timed image. Includes all the regular image settings
+ * @param obj - The object to generate settings for
+ * @param change - What to do if there's a change that requires a state update
+ * @returns A list of setting objects
+ */
 function timedImageSettings(obj: TimedImage, change: () => void): UserSetting[] {
     const settings: UserSetting[] = imageObjectSettings(obj.content, change)
     settings.push({type: "number", name: "Active time", value: obj.active, set: (input) => {obj.active = input; return obj.active}, whole: false})
@@ -72,6 +95,10 @@ function timedImageSettings(obj: TimedImage, change: () => void): UserSetting[] 
     return settings
 }
 
+/**
+ * Create an empty timed image object
+ * @returns An empty timed image object
+ */
 function createBlankImage(): TimedImage {
     return {
         content: {
@@ -88,6 +115,12 @@ function createBlankImage(): TimedImage {
     }
 }
 
+/**
+ * Draw a timed object (or not) based on the time
+ * @param ctx - The context to draw to
+ * @param obj - The object in question to draw
+ * @param time - The current time, in milliseconds
+ */
 function drawTimedImage(ctx: CanvasRenderingContext2D, obj: TimedImage, time: number): void {
     const objTime = (time / 1000 + obj.tOffset) % (obj.active + obj.inactive)
     if (objTime <= obj.active) {
@@ -95,7 +128,14 @@ function drawTimedImage(ctx: CanvasRenderingContext2D, obj: TimedImage, time: nu
     }
 }
 
-
+/**
+ * Create a scene for images
+ * @param ctx - The context to draw to
+ * @param name - The name of the scene
+ * @param debug - Debug only?
+ * @param stateUpdate - State change callback
+ * @returns A scene for image objects
+ */
 function createImageScene(ctx: CanvasRenderingContext2D, name: string, debug: boolean, stateUpdate: (change: StateChange) => void): Scene {
     const imageObjs: TimedImage[] = [createBlankImage()]
     function imageToSceneObject(image: TimedImage, id: number): SceneObject {
@@ -132,6 +172,12 @@ function createImageScene(ctx: CanvasRenderingContext2D, name: string, debug: bo
     } 
 }
 
+/**
+ * Create a renderer for images
+ * @param ctx - The context to make the renderer for
+ * @param stateUpdate - State change callback
+ * @returns A renderer for images
+ */
 export function createImageRenderer(ctx: CanvasRenderingContext2D, stateUpdate: (change: StateChange) => void): [Renderer, Scene] {
     const scene = createImageScene(ctx, "default", false, stateUpdate)
     const sceneMap = new Map<number, Scene>([[0, scene]])
@@ -150,6 +196,11 @@ export function createImageRenderer(ctx: CanvasRenderingContext2D, stateUpdate: 
     return [renderer, scene]
 }
 
+/**
+ * Turn a file into an image element
+ * @param file - A file that can be a source for an image
+ * @returns An image element
+ */
 function processImage(file: File): HTMLImageElement {
     const src = URL.createObjectURL(file)
     const image = new Image()

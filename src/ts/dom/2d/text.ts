@@ -2,6 +2,9 @@ import { Color, colorToString } from "../color.js";
 import { MultiSetting, Renderer, Scene, SceneObject, UserSetting } from "../graphics.js";
 import { StateChange } from "../main.js";
 
+/**
+ * The settings of a text object
+ */
 interface TextObject {
     content: string,
     scale: {x: number, y: number},
@@ -13,11 +16,19 @@ interface TextObject {
     alpha: number
 }
 
+/**
+ * Font information for font objects
+ */
 interface FontInfo {
     fontSize: string
     fontFamily: string
 }
 
+/**
+ * Draw a text object to the canvas
+ * @param ctx - The context to draw to
+ * @param obj - The object to draw
+ */
 function drawText(ctx: CanvasRenderingContext2D, obj: TextObject): void {
     ctx.save()
     ctx.textAlign = "center"
@@ -52,6 +63,12 @@ function drawText(ctx: CanvasRenderingContext2D, obj: TextObject): void {
     ctx.restore()
 }
 
+/**
+ * Generate the settings objects for text objects
+ * @param obj - The object in question
+ * @param textChange - What do do on an important state change
+ * @returns A list of setting objects
+ */
 function textObjectSettings(obj: TextObject, textChange: () => void): UserSetting[] {
     const settings: UserSetting[] = []
     settings.push({type: "string", name: "Text content", value: obj.content, set: (input) => {obj.content = input; textChange(); return obj.content}})
@@ -82,6 +99,9 @@ function textObjectSettings(obj: TextObject, textChange: () => void): UserSettin
     return settings
 }
 
+/**
+ * A text object that can appear and dissapear based on time
+ */
 interface TimedText {
     content: TextObject
     active: number // Amount of time that the text displays (in seconds)
@@ -89,6 +109,12 @@ interface TimedText {
     tOffset: number // Offset from start time
 }
 
+/**
+ * Generate settings for a timed text object
+ * @param obj - Object
+ * @param textChange - What to do on a state change
+ * @returns A list of setting objects
+ */
 function timedTextSettings(obj: TimedText, textChange: () => void): UserSetting[] {
     const settings: UserSetting[] = textObjectSettings(obj.content, textChange)
     const newSettings: UserSetting[] = []
@@ -99,6 +125,10 @@ function timedTextSettings(obj: TimedText, textChange: () => void): UserSetting[
     return settings
 }
 
+/**
+ * Create an empty text object
+ * @returns A timed text object
+ */
 function createBlankText(): TimedText {
     return {
         content: {
@@ -120,6 +150,12 @@ function createBlankText(): TimedText {
     }
 }
 
+/**
+ * Draw a timed text object to screen, if the time is right
+ * @param ctx - The context to draw to
+ * @param obj - The object to draw
+ * @param time - The current time in milliseconds
+ */
 function drawTimedText(ctx: CanvasRenderingContext2D, obj: TimedText, time: number): void {
     const objTime = (time / 1000 + obj.tOffset) % (obj.active + obj.inactive)
     if (objTime <= obj.active) {
@@ -127,7 +163,14 @@ function drawTimedText(ctx: CanvasRenderingContext2D, obj: TimedText, time: numb
     }
 }
 
-
+/**
+ * Create a text scene
+ * @param ctx - The context to create the scene for
+ * @param name - The name of the scene
+ * @param debug - Debug only?
+ * @param stateUpdate - State callback
+ * @returns A text scene
+ */
 function createTextScene(ctx: CanvasRenderingContext2D, name: string, debug: boolean, stateUpdate: (change: StateChange) => void): Scene {
     const textObjs: TimedText[] = [createBlankText()]
     function textToSceneObject(text: TimedText, id: number): SceneObject {
@@ -164,6 +207,12 @@ function createTextScene(ctx: CanvasRenderingContext2D, name: string, debug: boo
     } 
 }
 
+/**
+ * Create a renderer for text
+ * @param ctx - The context to render to
+ * @param stateUpdate - What to do on a state upgarde
+ * @returns A renderer
+ */
 export function createTextRenderer(ctx: CanvasRenderingContext2D, stateUpdate: (change: StateChange) => void): [Renderer, Scene] {
     const scene = createTextScene(ctx, "default", false, stateUpdate)
     const sceneMap = new Map<number, Scene>([[0, scene]])
